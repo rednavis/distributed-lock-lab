@@ -1,0 +1,98 @@
+name: "Task implementation"
+description: "Track the implementation of one specification from tasks/"
+title: "[T-0NN] <task title from the specification>"
+labels: ["type:task", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue per task specification, one pull request per issue.
+
+        If you are about to **start** work, comment `/claim` after opening this — see
+        [CONTRIBUTING.md §4](../blob/main/CONTRIBUTING.md#4-claiming-a-task).
+
+  - type: input
+    id: task-id
+    attributes:
+      label: Task id
+      description: "The specification this issue tracks."
+      placeholder: "T-011"
+    validations:
+      required: true
+
+  - type: input
+    id: spec-link
+    attributes:
+      label: Specification
+      description: "Link to the file in tasks/."
+      placeholder: "tasks/T-011-pg-tryacquire.md"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Milestone
+      options:
+        - "M0 — Foundations"
+        - "M1 — PostgreSQL lock backend"
+        - "M2 — Protected resource and executor"
+        - "M3 — etcd backend"
+        - "M4 — Client SDK and correctness proof"
+        - "M5 — Cloud infrastructure"
+        - "M6 — Observability and SRE"
+        - "M7 — Benchmark and publication"
+    validations:
+      required: true
+
+  - type: textarea
+    id: preconditions
+    attributes:
+      label: Preconditions
+      description: >
+        Copy the "Preconditions" line from the specification and state whether each is
+        merged. A task whose preconditions are unmet cannot be started — the files it
+        edits do not exist yet.
+      placeholder: |
+        - [x] T-010 merged (lockdb migrations apply against a PostgreSQL 16 Testcontainer)
+        - [x] M0 complete (lock-api carries LockHandle, LockInfo, LockOutcome)
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: "The files the specification's §3 table names."
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification commands
+      description: >
+        The specification's §6 commands. You will be asked to paste their output in the
+        pull request — not a summary of it.
+      render: shell
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of done
+      description: "All six must hold. Five out of six is not done."
+      options:
+        - label: "`./gradlew build` succeeds from a clean checkout"
+        - label: "`./gradlew spotlessCheck` is green, and no unrelated file was reformatted"
+        - label: "The tests the specification names pass, and everything already green stayed green"
+        - label: "The observability the task specifies **actually emits** — scraped and observed, not merely called"
+        - label: "The ledger row in `tasks/README.md` is updated"
+        - label: "Any deviation from the specification is recorded (what / why / blast radius / contract impact)"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: "Anything the reviewer or the next contributor should know. Optional."

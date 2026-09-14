@@ -1,0 +1,107 @@
+name: "Bug report"
+description: "Something behaves differently from what the specifications say it should"
+title: "[bug] <what is wrong, in one line>"
+labels: ["type:bug", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security vulnerabilities do not go here.** Report them privately —
+        see [SECURITY.md](../blob/main/SECURITY.md).
+
+        A **correctness flaw in the fencing mechanism** is the most valuable bug you could
+        find in this project, because it falsifies the central claim. Please report those
+        privately too, even though the software is not production-ready.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: What kind of wrong
+      options:
+        - "Safety — two holders, a repeated or decreasing token, an accepted stale write"
+        - "Liveness — something hangs, deadlocks, or never recovers"
+        - "Build or test — does not compile, test fails, CI red"
+        - "Documentation describes behaviour that does not match the code"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      placeholder: "lock-server/store.pg, rail-proxy, harness, deploy/terraform…"
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "Output of `git rev-parse --short HEAD`."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+      description: >
+        Cite the specification, contract or invariant that says so. A bug is a gap between
+        a written requirement and observed behaviour; naming the requirement is what turns
+        a report into a fix.
+      placeholder: "C1 #ct1-acquire says takeover of an expired lease mints a strictly greater token."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happens instead
+      description: "The actual output. Pasted, not summarised."
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: "Exact commands. Include a seed if the harness produced one."
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Lock backend
+      options:
+        - "pg"
+        - "etcd"
+        - "Both"
+        - "Not applicable"
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: "JDK, Docker, OS, and whether this was local or on a cluster."
+      placeholder: |
+        JDK:    25 (Temurin)
+        Docker: 27.3.1
+        OS:     macOS 15.6 (arm64)
+        Where:  local, docker compose
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: "I searched existing issues"
+        - label: "This is not a fencing or token-monotonicity flaw (those go to SECURITY.md privately)"
+        - label: "`rail-stub` misbehaving is not the bug — it is deliberately non-idempotent and injects failures"

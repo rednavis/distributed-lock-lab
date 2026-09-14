@@ -1,0 +1,43 @@
+# CODEOWNERS — automatic review routing.
+#
+# Every line assigns reviewers to a path pattern. The LAST matching pattern wins,
+# so the most specific rules are at the bottom.
+#
+# Update this file in the same pull request that changes MAINTAINERS.md.
+# See GOVERNANCE.md for how many approvals each kind of change needs.
+
+# Default owner for everything not matched below.
+*                                   @AlexOreshkevich
+
+# --- Authoritative contracts -------------------------------------------------
+# Changes here require TWO maintainer approvals (GOVERNANCE.md §2) and an
+# amendment row in docs/04-contracts.md §4.5. Never amended silently in a PR.
+/docs/contracts/                    @AlexOreshkevich
+/docs/04-contracts.md               @AlexOreshkevich
+
+# --- Decision records --------------------------------------------------------
+# Reversing an ADR requires a new superseding ADR, not an edit to the old one.
+/docs/adr/                          @AlexOreshkevich
+
+# --- The dependency-free contract module -------------------------------------
+# lock-api has zero third-party dependencies by contract; six modules depend on
+# it. Any change is a wire-compatibility change. TWO approvals.
+/lock-api/                          @AlexOreshkevich
+
+# --- Project governance ------------------------------------------------------
+/GOVERNANCE.md                      @AlexOreshkevich
+/MAINTAINERS.md                     @AlexOreshkevich
+/CODE_OF_CONDUCT.md                 @AlexOreshkevich
+/SECURITY.md                        @AlexOreshkevich
+/LICENSE                            @AlexOreshkevich
+/NOTICE                             @AlexOreshkevich
+/.github/CODEOWNERS                 @AlexOreshkevich
+
+# --- CI and supply chain -----------------------------------------------------
+# A workflow change can exfiltrate secrets or execute untrusted input.
+/.github/workflows/                 @AlexOreshkevich
+/.github/dependabot.yml             @AlexOreshkevich
+/gradle/libs.versions.toml          @AlexOreshkevich
+
+# --- Infrastructure that bills -----------------------------------------------
+/deploy/terraform/                  @AlexOreshkevich

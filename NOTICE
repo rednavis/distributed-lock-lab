@@ -1,0 +1,41 @@
+distributed-lock-lab
+Copyright 2026 The distributed-lock-lab Authors
+
+This product includes software developed at the distributed-lock-lab project
+(https://github.com/AlexOreshkevich/distributed-lock-lab).
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+---
+
+ATTRIBUTION AND PROVENANCE
+
+The domain modelled in this repository -- a mid-size payment service provider,
+its payout queue, and its external payment rail -- is entirely fictional. It
+does not describe, and is not derived from, any real organisation, customer,
+partner, employer, or production system. Every quantity in this repository is an
+explicitly labelled assumption invented for the project.
+
+No real payment data, personal data, or credentials appear anywhere in this
+repository, and none may be introduced. See SECURITY.md.
+
+---
+
+THIRD-PARTY DEPENDENCIES
+
+This project depends on third-party software, each under its own license. The
+authoritative inventory is the Gradle version catalog at
+gradle/libs.versions.toml, and a generated dependency report is published with
+each release.
+
+The module `lock-api` has zero third-party dependencies by contract
+(docs/contracts/C2-java-api.md), and CI enforces this.

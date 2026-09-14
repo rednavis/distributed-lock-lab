@@ -1,0 +1,55 @@
+name: "Documentation"
+description: "Something in the doc set is wrong, missing, unclear, or out of date"
+title: "[docs] <what is wrong, in one line>"
+labels: ["type:docs", "status:needs-triage", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation is a first-class deliverable here — the design is written before the
+        code, so a wrong document produces wrong code.
+
+        **Typos and broken links do not need an issue.** Open a pull request directly.
+
+        Note that **contract documents (C1–C5) have their own template.** Use
+        [contract change](?template=contract-change.yml) for anything under `docs/contracts/`,
+        because changing a pinned name is a breaking change rather than a docs fix.
+
+  - type: input
+    id: file
+    attributes:
+      label: File and section
+      placeholder: "docs/03-architecture.md §3.5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem
+      options:
+        - "Wrong — states something untrue"
+        - "Out of date — was true, no longer is"
+        - "Missing — a gap a reader falls into"
+        - "Unclear — I could not follow it"
+        - "Inconsistent — contradicts another document"
+        - "A number without its command, environment and date"
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail
+      description: >
+        Quote the passage and say what a reader would conclude wrongly. If you got stuck,
+        describing exactly where you got stuck is more useful than proposing wording —
+        the author cannot see their own blind spot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: "Optional. Happy to take a pull request instead."

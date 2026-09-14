@@ -1,0 +1,50 @@
+# --- Gradle / Java ---------------------------------------------------------
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+*.jar
+!gradle-wrapper.jar
+out/
+bin/
+
+# --- Terraform -------------------------------------------------------------
+# State can contain secrets in plaintext and must never be committed.
+# The provider lock file IS committed -- it is what makes resolution reproducible.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+!.terraform.lock.hcl
+
+# --- Secrets ---------------------------------------------------------------
+# No credential may ever enter this repository. See SECURITY.md.
+.env
+.env.*
+*-key.json
+*_rsa
+*.pem
+*.p12
+credentials.json
+service-account*.json
+
+# --- IDE -------------------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# --- OS --------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# --- Local scratch ---------------------------------------------------------
+/tmp/
+*.log
+!docs/**/*.log

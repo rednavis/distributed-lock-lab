@@ -1,0 +1,21 @@
+* text=auto eol=lf
+
+*.java     text diff=java
+*.kts      text
+*.md       text diff=markdown
+*.tf       text
+*.yml      text
+*.yaml     text
+*.sql      text
+*.sh       text eol=lf
+gradlew    text eol=lf
+gradlew.bat text eol=crlf
+
+*.jar      binary
+*.png      binary
+*.pdf      binary
+
+# Keep generated/vendored files out of diff noise and language stats.
+gradle/wrapper/gradle-wrapper.jar  binary linguist-vendored
+docs/**                            linguist-documentation
+tasks/**                           linguist-documentation

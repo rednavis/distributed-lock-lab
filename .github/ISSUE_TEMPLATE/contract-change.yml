@@ -1,0 +1,108 @@
+name: "Contract change"
+description: "Propose amending an authoritative contract (C1–C5), or report a conflict"
+title: "[contract] <what is wrong, in one line>"
+labels: ["type:contract", "status:needs-triage", "needs:two-approvals"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **The contracts are authoritative. A contract change is a breaking change.**
+
+        Use this when a contract looks wrong, is silent where you need it, contradicts
+        another contract, or contradicts a task specification.
+
+        **Do not implement an alternative and open a pull request.** Nine modules and two
+        lock backends compile against one vocabulary, and no single contributor sees more
+        than a slice of it. A plausible synonym compiles, passes its own module's tests,
+        and fails at every integration point three milestones later.
+
+        Changing a contract needs **two maintainer approvals**, an amendment row in
+        [04 §4.5](../blob/main/docs/04-contracts.md#c-changelog), and a revisit of every
+        dependent task specification — in that order, *then* implementation.
+
+  - type: dropdown
+    id: contract
+    attributes:
+      label: Which contract
+      options:
+        - "C1 — Database schemas"
+        - "C2 — Java API"
+        - "C3 — HTTP surfaces"
+        - "C4 — Observability"
+        - "C5 — Configuration, build and naming"
+        - "04 — Contract index / precedence rules"
+        - "More than one (a conflict between contracts)"
+    validations:
+      required: true
+
+  - type: input
+    id: anchor
+    attributes:
+      label: Anchor
+      description: "The pinned anchor, so reviewers land on the exact text."
+      placeholder: "#ct1-acquire"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is this
+      options:
+        - "The contract is wrong — it specifies something that cannot work"
+        - "The contract is silent — I need a name it does not pin"
+        - "Two contracts disagree with each other"
+        - "A task specification contradicts the contract"
+        - "The contract is correct but ambiguous — I want it tightened"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: What the contract says now
+      description: "Quote it. Exactly, including the surrounding table row or code block."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Why that is a problem
+      description: >
+        Be concrete. What fails, or what cannot be expressed? "It would be cleaner" is not
+        a reason to change a contract — see CONTRIBUTING.md §11.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed replacement
+      description: >
+        The exact replacement text. If you are reporting a conflict rather than proposing
+        a fix, write "reporting only" — that is a completely legitimate issue to file.
+    validations:
+      required: true
+
+  - type: textarea
+    id: blast-radius
+    attributes:
+      label: Blast radius
+      description: >
+        Which task specifications, modules, documents or already-merged code use the
+        current name or shape? Search the repository — this is the part that makes the
+        issue actionable, and the part that is easy to underestimate.
+      placeholder: |
+        - tasks/T-011, T-012, T-017 cite this anchor
+        - docs/03-architecture.md §3.4 flow A step 4 describes the statement
+        - Nothing is implemented yet, so no code changes
+    validations:
+      required: true
+
+  - type: input
+    id: blocked-task
+    attributes:
+      label: Blocked task
+      description: "If this is blocking a task you claimed, which one? Leave empty if not."
+      placeholder: "T-011"

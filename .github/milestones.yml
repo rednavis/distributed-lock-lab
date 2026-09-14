@@ -1,0 +1,76 @@
+# GitHub milestone definitions for distributed-lock-lab.
+#
+# Mirrors ROADMAP.md. Create them with scripts/bootstrap-github.sh, or by hand:
+#   gh api repos/:owner/:repo/milestones -f title="M0 — Foundations" -f description="..."
+#
+# Exit criteria live in ROADMAP.md, not here — GitHub milestone descriptions are
+# too short to hold them and would drift.
+
+- title: "M0 — Foundations"
+  state: open
+  description: >
+    Repository, build, module skeleton, CI. Everything else is blocked on this.
+    Tasks T-001…T-008. Exit: ./gradlew build and spotlessCheck green in a clean
+    clone; every module present; lock-api has zero third-party dependencies.
+    No cloud account needed. See ROADMAP.md#m0--foundations
+
+- title: "M1 — PostgreSQL lock backend"
+  state: open
+  description: >
+    A lock service whose state you can read with SELECT — taught first for exactly
+    that reason. Tasks T-010…T-017. Exit: Testcontainers suite green for store.pg;
+    tokens strictly increase under 16 concurrent acquirers; takeover of an expired
+    lease mints a strictly greater token. No cloud account needed.
+    See ROADMAP.md#m1--postgresql-lock-backend
+
+- title: "M2 — Protected resource and executor"
+  state: open
+  description: >
+    paydb, the double-entry ledger, the non-idempotent rail, and both fencing
+    enforcement points. Tasks T-020…T-027. Exit: a local payout moves PENDING to
+    POSTED with balanced ledger rows; the fenced UPDATE affects 0 rows for a stale
+    token; rail_high_water refuses a stale token before the rail is touched.
+    High parallelism. See ROADMAP.md#m2--protected-resource-and-executor
+
+- title: "M3 — etcd backend"
+  state: open
+  description: >
+    The second backend, with ModRevision captured at grant time as the token.
+    Tasks T-030…T-034. Exit: the same payout-executor, unchanged, passes the M2
+    suite with lock.backend=etcd. Fully parallel with M2 — different modules.
+    See ROADMAP.md#m3--etcd-backend
+
+- title: "M4 — Client SDK and correctness proof"
+  state: open
+  description: >
+    THE MILESTONE THIS PROJECT EXISTS FOR. Tasks T-040…T-047. Exit: T-042 produces
+    both captured outcomes from one script — fencing off gives a corrupted ledger
+    and two rail submissions, fencing on gives one submission and a fenced_out
+    event. The stale worker is rejected twice, independently.
+    See ROADMAP.md#m4--client-sdk-and-the-correctness-proof
+
+- title: "M5 — Cloud infrastructure"
+  state: open
+  description: >
+    Terraform, GKE Autopilot, two Cloud SQL instances, the etcd StatefulSet.
+    Tasks T-050…T-059. WARNING — T-053 onward BILLS REAL MONEY. Batch M5 and M6
+    into one day and tear down the same day. The budget alert is created in T-050,
+    before the first apply. All HCL can be authored and validated offline in
+    parallel with M1–M4. See ROADMAP.md#m5--cloud-infrastructure
+
+- title: "M6 — Observability and SRE"
+  state: open
+  description: >
+    Metrics, SLOs, an error-budget policy with named consequences, and a game day
+    that fires every alert on purpose. Tasks T-060…T-069. The offline half —
+    runbooks, alert definitions, SLO objects — is authored with no cluster running
+    and is highly parallel. See ROADMAP.md#m6--observability-and-sre
+
+- title: "M7 — Benchmark and publication"
+  state: open
+  description: >
+    The measured comparison, the failover experiment, the write-up. Tasks
+    T-070…T-075. Exit: p50/p99 acquire latency per backend with the command and
+    environment recorded; the comparison table regenerates from committed raw
+    data; the recommendation is stated with its cost, not only its benefit.
+    See ROADMAP.md#m7--benchmark-and-publication

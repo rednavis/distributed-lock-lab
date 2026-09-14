@@ -1,0 +1,50 @@
+# Dependency update automation.
+#
+# The version catalog (gradle/libs.versions.toml) is the single place any version
+# appears, by contract (C5 #ct5-catalog). Dependabot therefore produces one
+# coherent PR per ecosystem rather than scattering coordinates across build files.
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["type:chore", "area:build"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Spring Boot's BOM governs a large coordinated surface; splitting its
+      # members across PRs produces combinations nobody tests.
+      spring:
+        patterns: ["org.springframework*"]
+      testing:
+        patterns: ["org.junit*", "org.assertj*", "org.testcontainers*", "org.awaitility*"]
+      observability:
+        patterns: ["io.micrometer*", "io.opentelemetry*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["type:chore", "area:build"]
+    commit-message:
+      prefix: "chore(ci)"
+
+  - package-ecosystem: "terraform"
+    directory: "/deploy/terraform"
+    schedule:
+      interval: "monthly"
+    labels: ["type:chore", "area:infra"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/deploy/compose"
+    schedule:
+      interval: "monthly"
+    labels: ["type:chore", "area:infra"]
+    commit-message:
+      prefix: "chore(deps)"

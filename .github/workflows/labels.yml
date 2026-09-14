@@ -1,0 +1,27 @@
+# Sync GitHub labels from .github/labels.yml.
+#
+# labels.yml is the single source of truth. A label created ad hoc in the web UI
+# is deleted on the next sync -- that is deliberate, so the label set stays
+# meaningful instead of accreting near-duplicates.
+name: labels
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/labels.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          yaml-file: .github/labels.yml
+          skip-delete: false
+          dry-run: ${{ github.event_name == 'workflow_dispatch' }}

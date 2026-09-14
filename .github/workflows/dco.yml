@@ -1,0 +1,43 @@
+# Developer Certificate of Origin check.
+#
+# Contributions are accepted under Apache-2.0 via the DCO rather than a CLA.
+# `git commit -s` appends the Signed-off-by trailer, which is the contributor's
+# statement that they have the right to submit the patch. See CONTRIBUTING.md.
+name: dco
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Every commit is signed off
+        run: |
+          set -uo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          fail=0
+          while IFS= read -r sha; do
+            author="$(git show -s --format='%an <%ae>' "$sha")"
+            if ! git show -s --format='%B' "$sha" | grep -qiE "^Signed-off-by: .+ <.+@.+>"; then
+              echo "::error::commit $(git rev-parse --short "$sha") is not signed off ($author)"
+              fail=1
+            fi
+          done < <(git rev-list "$base".."$head")
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "Fix with:  git rebase --signoff $base  &&  git push --force-with-lease"
+            echo "See CONTRIBUTING.md section 6 and https://developercertificate.org/"
+          fi
+          exit $fail
