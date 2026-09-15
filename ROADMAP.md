@@ -15,9 +15,10 @@ states: true or false in one tree state, never a judgement call.
 | | |
 |---|---|
 | **Current milestone** | **M0 — Foundations** |
-| Tasks complete | 0 of 63 |
-| Blocking everything | `T-001`, `T-002`, `T-003` — until the build exists, no Java task can start |
-| Available in parallel right now | The documentation and Terraform-authoring lanes; see [`docs/12-parallelization-map.md`](docs/12-parallelization-map.md) |
+| Tasks complete | 0 of 63 · **1 claimed** |
+| In flight | [`T-001`](../../issues/11) — the monorepo skeleton, claimed by [@HvorostenkoAlexander](https://github.com/HvorostenkoAlexander) |
+| Blocking everything | `T-001` → `T-002` → `T-003`. Until the Gradle build exists, no Java task can start |
+| Available in parallel right now | [`T-050`](../../issues/48), [`T-051`](../../issues/49), [`T-052`](../../issues/50) (Terraform authoring, no cloud account) and [`T-068`](../../issues/66) (the runbook, pure prose) — see [`docs/12-parallelization-map.md`](docs/12-parallelization-map.md) |
 
 ## The three checkpoints that matter
 
