@@ -20,6 +20,9 @@ remote_theme: just-the-docs/just-the-docs@v0.10.1
 
 plugins:
   - jekyll-remote-theme
+  # Required by the just-the-docs theme.
+  - jekyll-seo-tag
+  - jekyll-include-cache
   # Renders .md files that have no front matter -- which is all of them.
   - jekyll-optional-front-matter
   # Rewrites [text](other.md) into a working URL. Without this every

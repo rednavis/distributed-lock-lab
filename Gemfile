@@ -6,6 +6,10 @@ gem "jekyll", "~> 4.3"
 gem "jekyll-remote-theme", "~> 0.4"
 
 group :jekyll_plugins do
+  # Required by the just-the-docs theme itself.
+  gem "jekyll-seo-tag", "~> 2.8"
+  gem "jekyll-include-cache", "~> 0.2"
+
   # Renders Markdown that carries no YAML front matter -- which is every file
   # in this repository, deliberately, so that github.com renders them cleanly.
   gem "jekyll-optional-front-matter", "~> 0.3"
