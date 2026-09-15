@@ -1,0 +1,8 @@
+/*
+ * Copyright 2026 The distributed-lock-lab Authors
+ *
+ * Part of distributed-lock-lab. The operator it models, Northwind Pay, a mid-size payment
+ * service provider, is fictional.
+ *
+ * Licensed under the Apache License, Version 2.0. SPDX-License-Identifier: Apache-2.0
+ */

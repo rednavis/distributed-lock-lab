@@ -1,6 +1,8 @@
 # --- Gradle / Java ---------------------------------------------------------
 build/
 .gradle/
+# Kotlin compiler session markers and error logs, written wherever kotlin-dsl compiles (build-logic).
+.kotlin/
 !gradle/wrapper/gradle-wrapper.jar
 *.class
 *.jar

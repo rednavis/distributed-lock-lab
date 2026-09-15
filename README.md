@@ -146,7 +146,7 @@ Full inventory with dependency edges: [C5 §5.4](docs/contracts/C5-config-build-
 
 ## Getting started
 
-Nothing to build yet — M0 is what creates the build. Until then:
+The Gradle build is in place; the services themselves are still being written. To find your way in:
 
 | If you want to | Start at |
 |---|---|
@@ -157,14 +157,17 @@ Nothing to build yet — M0 is what creates the build. Until then:
 | **Read the SRE half** | [`docs/06-observability-and-slo.md`](docs/06-observability-and-slo.md), [`docs/08-operations.md`](docs/08-operations.md) |
 | **Contribute as an AI agent** | [`AGENTS.md`](AGENTS.md) — required reading before generating anything |
 
-Once M0 lands, the local path is a single command and requires no cloud account:
+The local path needs JDK 25 and no cloud account:
 
 ```console
 git clone https://github.com/rednavis/distributed-lock-lab.git
 cd distributed-lock-lab
-./gradlew build          # builds all modules, runs the full test suite
-docker compose up        # local stack: both backends, the rail, the services
+./gradlew build          # builds all modules, runs the tests and the style check
+./gradlew spotlessApply  # formats Java and Gradle files, adds the license header
 ```
+
+`docker compose up` — the local stack with both backends, the rail and the services — arrives with
+[`T-005`](tasks/T-005-compose-stack.md).
 
 ## The contracts are authoritative
 

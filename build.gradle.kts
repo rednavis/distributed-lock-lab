@@ -1,8 +1,6 @@
-// Root build: no versions, no dependencies, no per-module logic (ADR-010 D2).
-// Convention plugins from build-logic are applied once T-003 lands.
+// Root build: convention plugins only — no versions, no dependencies, no per-module logic
+// (ADR-010 D2, C5 #ct5-layout). Each module applies its own dlock.*-conventions plugin.
 
-// Core plugin, no version: provides a real `build` lifecycle task. Without it, `./gradlew build`
-// silently resolves to the `buildEnvironment` help task by abbreviation and builds nothing.
 plugins {
-    base
+    id("dlock.root-conventions")
 }
