@@ -37,7 +37,7 @@ jobs:
     name: build site
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -47,7 +47,7 @@ jobs:
 
       - name: Configure Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       # Gives front matter to README/CONTRIBUTING/CODE_OF_CONDUCT, which
       # jekyll-optional-front-matter skips by design. Mutates the checkout;
@@ -86,7 +86,7 @@ jobs:
           [ "$n" -eq 63 ] || { echo "::error::expected 63 task pages, got $n"; missing=1; }
           exit $missing
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -99,4 +99,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
