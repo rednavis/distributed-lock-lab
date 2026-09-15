@@ -6,6 +6,7 @@
 #   ./scripts/check-docs.sh links      # relative links resolve
 #   ./scripts/check-docs.sh hygiene    # no credentials, community files present
 #   ./scripts/check-docs.sh ledger     # tasks/ and the board agree
+#   ./scripts/check-docs.sh codeowners # review routing matches the roster
 #
 # Run this before opening a documentation pull request. Documentation is a
 # first-class deliverable here -- the design is written before the code, so a
@@ -127,12 +128,52 @@ check_ledger() {
   [ "$bad" -eq 0 ] && echo "  OK -- board and specifications agree." || RC=1
 }
 
+# ------------------------------------------------------------- codeowners ---
+# GitHub SILENTLY ignores a CODEOWNERS entry whose handle it cannot resolve:
+# no review is requested, nothing warns you, and the gap surfaces only when a
+# change that needed a second reviewer merges without one. That happened here
+# once already, with a handle that was not a GitHub user at all.
+#
+# Resolving a handle against the API needs a token, so the portable check is
+# structural: every owner named in CODEOWNERS must also be listed in
+# MAINTAINERS.md. That catches the drift that matters -- someone added to review
+# routing but never recorded, or removed from the roster but still routed to --
+# and it costs nothing. Set CHECK_CODEOWNERS_API=1 to additionally verify each
+# handle against the repository's collaborator list.
+check_codeowners() {
+  echo "== codeowners =="
+  local owners roster bad=0 h
+
+  owners="$(grep -ohE '@[A-Za-z0-9-]+' .github/CODEOWNERS 2>/dev/null | tr -d '@' | sort -u || true)"
+  roster="$(grep -ohE '@[A-Za-z0-9-]+' MAINTAINERS.md 2>/dev/null | tr -d '@' | sort -u || true)"
+
+  while IFS= read -r h; do
+    [ -z "$h" ] && continue
+    if ! grep -qx "$h" <<<"$roster"; then
+      err ".github/CODEOWNERS" "@$h routes reviews but is not listed in MAINTAINERS.md"
+      bad=1
+    fi
+    if [ "${CHECK_CODEOWNERS_API:-}" = "1" ]; then
+      if gh api "repos/${GITHUB_REPOSITORY:-rednavis/distributed-lock-lab}/collaborators/$h" --silent 2>/dev/null; then
+        echo "    resolves  @$h"
+      else
+        err ".github/CODEOWNERS" "@$h does not resolve to a collaborator -- GitHub will ignore it"
+        bad=1
+      fi
+    fi
+  done <<<"$owners"
+
+  echo "  owners: $(grep -c . <<<"$owners" || true), roster: $(grep -c . <<<"$roster" || true)"
+  [ "$bad" -eq 0 ] && echo "  OK -- every code owner is a recorded maintainer." || RC=1
+}
+
 case "$MODE" in
   links)   check_links ;;
+  codeowners) check_codeowners ;;
   hygiene) check_hygiene ;;
   ledger)  check_ledger ;;
-  all)     check_links; echo; check_hygiene; echo; check_ledger ;;
-  *) echo "usage: $0 [links|hygiene|ledger|all]" >&2; exit 2 ;;
+  all)     check_links; echo; check_hygiene; echo; check_ledger; echo; check_codeowners ;;
+  *) echo "usage: $0 [links|hygiene|ledger|codeowners|all]" >&2; exit 2 ;;
 esac
 
 echo

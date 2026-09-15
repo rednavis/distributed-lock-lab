@@ -38,3 +38,6 @@ jobs:
 
       - name: Task board matches tasks/
         run: ./scripts/check-docs.sh ledger
+
+      - name: Review routing matches the maintainer roster
+        run: ./scripts/check-docs.sh codeowners

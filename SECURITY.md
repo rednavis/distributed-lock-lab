@@ -46,7 +46,7 @@ Use GitHub's private vulnerability reporting:
 (Security tab → Report a vulnerability).
 
 If that is unavailable to you, contact the lead maintainer
-[@AlexOreshkevich](https://github.com/AlexOreshkevich) directly and ask for a private channel.
+[@nirmata78](https://github.com/nirmata78) directly and ask for a private channel.
 
 **What to expect:**
 
