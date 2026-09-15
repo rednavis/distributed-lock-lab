@@ -204,6 +204,28 @@ The domain — a mid-size payment service provider, its payout queue, its extern
 production data. No benchmark number appears without the command, environment and date that produced
 it.
 
+## Start here
+
+Five tasks are unblocked **right now** — nothing needs to be merged first, and three of them need no
+Java at all:
+
+| Issue | Task | What you need |
+|---|---|---|
+| [#11](https://github.com/rednavis/distributed-lock-lab/issues/11) | `T-001` Monorepo skeleton and Gradle settings | JDK 25, Gradle. **Blocks every other Java task — highest priority in the repo** |
+| [#48](https://github.com/rednavis/distributed-lock-lab/issues/48) | `T-050` Terraform root and dev environment | Terraform CLI only. No cloud account, no billing |
+| [#49](https://github.com/rednavis/distributed-lock-lab/issues/49) | `T-051` Terraform module: network | Terraform CLI only |
+| [#50](https://github.com/rednavis/distributed-lock-lab/issues/50) | `T-052` Terraform module: two Cloud SQL instances | Terraform CLI only |
+| [#66](https://github.com/rednavis/distributed-lock-lab/issues/66) | `T-068` The runbook, one entry per alert | A text editor. Pure prose |
+
+Once `T-001` lands, [`T-023`](https://github.com/rednavis/distributed-lock-lab/issues/30) —
+`rail-stub`, the deliberately non-idempotent rail — is the best first Java contribution: self-contained,
+zero dependencies, and it is the hazard the whole experiment depends on.
+
+Browse everything: **[ready to start](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22)** ·
+**[good first issues](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** ·
+[all 63 tasks](https://github.com/rednavis/distributed-lock-lab/issues) ·
+[the board](tasks/README.md) · [what blocks what](docs/12-parallelization-map.md)
+
 ## Contributing
 
 Contributions are welcome and the project is structured to make them tractable: 63 independently
