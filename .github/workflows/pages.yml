@@ -34,6 +34,7 @@ concurrency:
 
 jobs:
   build:
+    name: build site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +91,7 @@ jobs:
           path: _site
 
   deploy:
+    name: deploy site
     needs: build
     runs-on: ubuntu-latest
     environment:

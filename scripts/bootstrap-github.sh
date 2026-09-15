@@ -139,7 +139,9 @@ create_issues() {
   for spec in tasks/T-*.md; do
     local id title ms row blockers labels body
     id="$(basename "$spec" | grep -oE '^T-[0-9]{3}')"
-    title="$(head -1 "$spec" | sed -E 's/^# *//')"
+    # The spec's H1 is "# T-011 — PostgresLockStore.tryAcquire"; strip the
+    # leading id so the issue title is not "[T-011] T-011 — ...".
+    title="$(head -1 "$spec" | sed -E 's/^# *//; s/^T-[0-9]{3}[a-z]? *[—-] *//')"
 
     if grep -Fq "[$id]" <<<"$existing" || grep -Fq "$title" <<<"$existing"; then
       printf '  %-8s %s\n' "$id" "exists, skipped"

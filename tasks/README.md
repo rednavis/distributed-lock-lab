@@ -88,7 +88,7 @@ Runs **fully in parallel with M3** — different modules entirely.
 | [T-020](T-020-paydb-migration.md) | Flyway migration: paydb schema | T-004 | Not started | **Fan-out** |
 | [T-021](T-021-fenced-repositories.md) | payment-resource: account and ledger repositories | T-020 | Not started | `safety` — fence point (a) |
 | [T-022](T-022-payment-resource-rest.md) | payment-resource HTTP surface, fenced-out signal | T-021 | Not started | `safety` |
-| [T-023](T-023-rail-stub.md) | rail-stub: the non-idempotent external rail | T-004 | Not started | **Best first Java task. Zero dependencies, needs nothing from M1** |
+| [T-023](T-023-rail-stub.md) | rail-stub: the non-idempotent external rail | T-004 | Not started | **Best first Java task** — zero dependencies, needs nothing from M1. `good first issue` |
 | [T-024](T-024-rail-proxy.md) | rail-proxy: the fencing gate | T-020, T-023 | Not started | `safety` — fence point (c) |
 | [T-025](T-025-payout-executor.md) | payout-executor: the state machine | T-022, T-024, T-016b | Not started | `critical-path` |
 | [T-026](T-026-kill-switches.md) | The two fencing kill switches | T-025 | Not started | `safety` — read C5 §5.2 before touching |

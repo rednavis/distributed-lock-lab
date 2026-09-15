@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   detect:
+    name: codeql gate
     runs-on: ubuntu-latest
     outputs:
       has-java: ${{ steps.check.outputs.has-java }}
@@ -33,6 +34,7 @@ jobs:
           fi
 
   analyze:
+    name: codeql
     needs: detect
     if: needs.detect.outputs.has-java == 'true'
     runs-on: ubuntu-latest

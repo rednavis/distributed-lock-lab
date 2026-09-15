@@ -19,6 +19,7 @@ jobs:
   # build to run. This gate lets CI be green and meaningful today, and start doing
   # real work the moment M0 merges, without anyone having to remember to enable it.
   detect:
+    name: gradle gate
     runs-on: ubuntu-latest
     outputs:
       has-build: ${{ steps.check.outputs.has-build }}
@@ -34,6 +35,7 @@ jobs:
           fi
 
   build:
+    name: gradle build
     needs: detect
     if: needs.detect.outputs.has-build == 'true'
     runs-on: ubuntu-latest
