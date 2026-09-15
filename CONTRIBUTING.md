@@ -60,7 +60,7 @@ The board's [ledger](tasks/README.md#3-ledger) is the durable record of what is 
 the working surface. If the two disagree, the ledger is authoritative and the discrepancy is a bug
 worth reporting.
 
-There is also a **[project board](https://github.com/orgs/rednavis/projects)** with every task on it.
+There is also a **[project board](https://github.com/orgs/rednavis/projects/3)** with every task on it.
 Group it by **Milestone** for the delivery plan, or filter `label:status:ready` for work with no
 unmerged blockers.
 
