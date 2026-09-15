@@ -86,7 +86,7 @@ jobs:
           [ "$n" -eq 63 ] || { echo "::error::expected 63 task pages, got $n"; missing=1; }
           exit $missing
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
