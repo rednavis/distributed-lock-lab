@@ -24,7 +24,7 @@ jobs:
     outputs:
       has-build: ${{ steps.check.outputs.has-build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: check
         run: |
           if [ -f settings.gradle.kts ]; then
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
