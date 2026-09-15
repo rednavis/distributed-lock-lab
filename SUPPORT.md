@@ -4,14 +4,15 @@ Where to ask, depending on what you need.
 
 | I want to… | Go to |
 |---|---|
+| Browse everything in one place | The [documentation site](https://rednavis.github.io/distributed-lock-lab/) — full-text search across the doc set |
 | Understand what this project is | [`README.md`](README.md), then [`docs/00-charter.md`](docs/00-charter.md) |
 | Find something to work on | [`CONTRIBUTING.md` §3](CONTRIBUTING.md#3-finding-work-you-can-actually-start) and the [task board](tasks/README.md) |
 | Look up a name, schema, or signature | [`docs/04-contracts.md`](docs/04-contracts.md) — the index to every pinned identifier |
 | Understand why something was designed this way | [`docs/adr/`](docs/adr/) — fourteen decisions with their reasoning |
-| Ask a question | [GitHub Discussions](https://github.com/AlexOreshkevich/distributed-lock-lab/discussions) |
-| Report a bug | [Bug report issue](https://github.com/AlexOreshkevich/distributed-lock-lab/issues/new?template=bug.yml) |
+| Ask a question | [GitHub Discussions](https://github.com/rednavis/distributed-lock-lab/discussions) |
+| Report a bug | [Bug report issue](https://github.com/rednavis/distributed-lock-lab/issues/new?template=bug.yml) |
 | Report a security vulnerability | **[`SECURITY.md`](SECURITY.md) — privately, not a public issue** |
-| Challenge a pinned name | [Contract change issue](https://github.com/AlexOreshkevich/distributed-lock-lab/issues/new?template=contract-change.yml) |
+| Challenge a pinned name | [Contract change issue](https://github.com/rednavis/distributed-lock-lab/issues/new?template=contract-change.yml) |
 | Propose scope not currently planned | Discussions first — check [non-goals](docs/00-charter.md#ch-nongoals), the answer may already be "deliberately not" |
 
 ## Response expectations

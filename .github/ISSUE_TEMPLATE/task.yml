@@ -9,7 +9,7 @@ body:
         One issue per task specification, one pull request per issue.
 
         If you are about to **start** work, comment `/claim` after opening this — see
-        [CONTRIBUTING.md §4](../blob/main/CONTRIBUTING.md#4-claiming-a-task).
+        [CONTRIBUTING.md §4](../blob/master/CONTRIBUTING.md#4-claiming-a-task).
 
   - type: input
     id: task-id

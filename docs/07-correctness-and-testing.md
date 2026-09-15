@@ -226,7 +226,7 @@ that occasionally permits two effective holders has no performance story at all.
 | Trigger | Runs | Budget |
 |---|---|---|
 | Every push | Spotless + static analysis, unit tests, Testcontainers integration on **both** backends, the fixed DST seed set, **the §7.3 fencing experiment in both switch states** | ASSUMPTION ≤ 15 min |
-| Every PR to main | The above, plus one linearizability run on a short history, plus the hot-key profile at reduced scale | ASSUMPTION ≤ 30 min |
+| Every PR to master | The above, plus one linearizability run on a short history, plus the hot-key profile at reduced scale | ASSUMPTION ≤ 30 min |
 | Nightly | Full DST seed sweep, all five load profiles, the mid-run-fault benchmark run | untimed |
 | Weekly / release | Fault matrix rows that need cloud resources; game day on the schedule in [06](06-observability-and-slo.md) | manual |
 

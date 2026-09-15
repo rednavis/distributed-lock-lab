@@ -96,4 +96,4 @@ uncertain? What did you decide not to do, and why?
 ---
 
 - [ ] My commits are signed off (`git commit -s`) under the [DCO](https://developercertificate.org/)
-- [ ] If AI-assisted, a `Co-Authored-By` trailer names the tool ([AGENTS.md](../blob/main/AGENTS.md))
+- [ ] If AI-assisted, a `Co-Authored-By` trailer names the tool ([AGENTS.md](../blob/master/AGENTS.md))

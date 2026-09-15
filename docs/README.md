@@ -2,6 +2,9 @@
 
 The complete doc set for distributed-lock-lab, and the paths through it.
 
+> Also published as a searchable site at
+> **<https://rednavis.github.io/distributed-lock-lab/>**.
+
 Everything here is **docs-as-code**: reviewed in pull requests, cross-linked with stable anchors, and
 checked in CI for broken links. A documentation defect is a real defect in a repository where the
 design is written before the code.

@@ -1,0 +1,166 @@
+# GitHub Pages / Jekyll configuration.
+#
+# Design constraint: the Markdown files in this repository are read primarily on
+# github.com, so NONE of them carries YAML front matter -- GitHub renders front
+# matter as an ugly table at the top of the page. Everything Jekyll needs
+# (layout, title, nav order) is therefore injected from `defaults` below, keyed
+# on exact file paths. Adding a document means adding a `defaults` entry here,
+# not editing the document.
+#
+# Built and deployed by .github/workflows/pages.yml.
+
+title: distributed-lock-lab
+description: >-
+  A distributed lock is not what makes your critical section safe.
+  Fencing tokens are. This project proves it by experiment.
+url: https://rednavis.github.io
+baseurl: /distributed-lock-lab
+
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+
+plugins:
+  - jekyll-remote-theme
+  # Renders .md files that have no front matter -- which is all of them.
+  - jekyll-optional-front-matter
+  # Rewrites [text](other.md) into a working URL. Without this every
+  # cross-reference in the doc set 404s on the published site.
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+  - jekyll-sitemap
+
+relative_links:
+  enabled: true
+  collections: false
+
+optional_front_matter:
+  remove_originals: true
+
+titles_from_headings:
+  enabled: true
+  strip_title: false
+
+# --- theme behaviour ---------------------------------------------------------
+search_enabled: true
+search:
+  heading_level: 3
+  previews: 2
+  tokenizer_separator: /[\s/]+/
+
+heading_anchors: true
+color_scheme: dark
+
+aux_links:
+  "View on GitHub":
+    - "https://github.com/rednavis/distributed-lock-lab"
+aux_links_new_tab: true
+
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: >-
+  Apache-2.0. The domain modelled here is fictional; every number is a labelled
+  assumption. <strong>Not production-ready</strong> &mdash; see SECURITY.md.
+
+# --- what is not a page ------------------------------------------------------
+exclude:
+  - scripts/
+  - .github/
+  - LICENSE
+  - NOTICE
+  - CHANGELOG.md
+  - .gitignore
+  - .gitattributes
+  - .editorconfig
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+  - build/
+  - .gradle/
+
+# --- navigation --------------------------------------------------------------
+# Keyed on exact paths so no source file needs front matter.
+defaults:
+  - scope: { path: "" }
+    values:
+      layout: default
+
+  # Landing page
+  - scope: { path: "README.md" }
+    values: { title: "Home", nav_order: 1 }
+
+  # Getting involved
+  - scope: { path: "CONTRIBUTING.md" }
+    values: { title: "Contributing", nav_order: 2 }
+  - scope: { path: "AGENTS.md" }
+    values: { title: "AI contributors", nav_order: 3 }
+  - scope: { path: "ROADMAP.md" }
+    values: { title: "Roadmap", nav_order: 4 }
+  - scope: { path: "tasks/README.md" }
+    values: { title: "Task board", nav_order: 5 }
+
+  # Documentation set
+  - scope: { path: "docs/README.md" }
+    values: { title: "Documentation", nav_order: 6, has_children: true }
+  - scope: { path: "docs/00-charter.md" }
+    values: { title: "00 Charter", parent: "Documentation", nav_order: 0 }
+  - scope: { path: "docs/01-requirements.md" }
+    values: { title: "01 Requirements", parent: "Documentation", nav_order: 1 }
+  - scope: { path: "docs/02-domain-model.md" }
+    values: { title: "02 Domain model", parent: "Documentation", nav_order: 2 }
+  - scope: { path: "docs/03-architecture.md" }
+    values: { title: "03 Architecture", parent: "Documentation", nav_order: 3 }
+  - scope: { path: "docs/04-contracts.md" }
+    values: { title: "04 Contracts index", parent: "Documentation", nav_order: 4 }
+  - scope: { path: "docs/05-infrastructure.md" }
+    values: { title: "05 Infrastructure", parent: "Documentation", nav_order: 5 }
+  - scope: { path: "docs/06-observability-and-slo.md" }
+    values: { title: "06 Observability and SLO", parent: "Documentation", nav_order: 6 }
+  - scope: { path: "docs/07-correctness-and-testing.md" }
+    values: { title: "07 Correctness and testing", parent: "Documentation", nav_order: 7 }
+  - scope: { path: "docs/08-operations.md" }
+    values: { title: "08 Operations", parent: "Documentation", nav_order: 8 }
+  - scope: { path: "docs/09-risks.md" }
+    values: { title: "09 Risks", parent: "Documentation", nav_order: 9 }
+  - scope: { path: "docs/10-delivery-plan.md" }
+    values: { title: "10 Delivery plan", parent: "Documentation", nav_order: 10 }
+  - scope: { path: "docs/11-glossary.md" }
+    values: { title: "11 Glossary", parent: "Documentation", nav_order: 11 }
+  - scope: { path: "docs/12-parallelization-map.md" }
+    values: { title: "12 Parallelization map", parent: "Documentation", nav_order: 12 }
+
+  # Contracts -- authoritative, so they get their own top-level section
+  - scope: { path: "docs/contracts" }
+    values: { parent: "Documentation" }
+  - scope: { path: "docs/contracts/C1-database-schemas.md" }
+    values: { title: "C1 Database schemas", parent: "Documentation", nav_order: 20 }
+  - scope: { path: "docs/contracts/C2-java-api.md" }
+    values: { title: "C2 Java API", parent: "Documentation", nav_order: 21 }
+  - scope: { path: "docs/contracts/C3-http-surfaces.md" }
+    values: { title: "C3 HTTP surfaces", parent: "Documentation", nav_order: 22 }
+  - scope: { path: "docs/contracts/C4-observability.md" }
+    values: { title: "C4 Observability", parent: "Documentation", nav_order: 23 }
+  - scope: { path: "docs/contracts/C5-config-build-and-naming.md" }
+    values: { title: "C5 Config, build, naming", parent: "Documentation", nav_order: 24 }
+
+  # Decision records -- listed, but collapsed under their own parent
+  - scope: { path: "docs/adr" }
+    values: { parent: "Documentation", nav_order: 30 }
+
+  # Governance
+  - scope: { path: "GOVERNANCE.md" }
+    values: { title: "Governance", nav_order: 7 }
+  - scope: { path: "SECURITY.md" }
+    values: { title: "Security", nav_order: 8 }
+  - scope: { path: "SUPPORT.md" }
+    values: { title: "Support", nav_order: 9 }
+  - scope: { path: "CODE_OF_CONDUCT.md" }
+    values: { title: "Code of Conduct", nav_order: 10 }
+  - scope: { path: "MAINTAINERS.md" }
+    values: { title: "Maintainers", nav_order: 11 }
+
+  # 63 task specifications: reachable and searchable, but not in the sidebar --
+  # they would swamp it. The task board links every one of them.
+  - scope: { path: "tasks" }
+    values: { nav_exclude: true }
+  - scope: { path: "tasks/README.md" }
+    values: { nav_exclude: false }

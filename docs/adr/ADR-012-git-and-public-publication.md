@@ -40,7 +40,7 @@ that phase requires is built on version control.**
 | Part | Decision |
 |---|---|
 | Version control | git, single repository, monorepo ([ADR-010](ADR-010-monorepo-single-gradle-build.md)) |
-| Branching | Trunk-based. `main` is protected; short-lived branches; squash merge; linear history |
+| Branching | **GitHub Flow**: `master` is the single long-lived branch and is protected; all work happens on short-lived feature branches off it, merged back by squash. Linear history |
 | Visibility | Public from the first commit |
 | History | Begins at publication. The specification tree is imported as one initial commit, not reconstructed |
 | Licence | Apache-2.0 with DCO sign-off ([ADR-014](ADR-014-apache-2-and-dco.md)) |
@@ -57,7 +57,7 @@ never changes again; this tree now changes daily, by people the lead maintainer 
 |---|---|
 | **Positive** | Code review becomes possible, which is the precondition for accepting outside contributions at all. CI can enforce what prose can only request — the zero-dependency rule for `lock-api`, the metric cardinality check, the DCO, the absence of credential material. Attribution and revert become available. Contributors can see what changed and why, which the ledger never showed |
 | **Negative** | Every contributor now needs git fluency, which is a real barrier for a first-time open-source contributor and is why [`CONTRIBUTING.md`](../../CONTRIBUTING.md) spells out the branch and commit conventions rather than assuming them. The ledger in `tasks/README.md` is now **partially redundant** with git history, and the two can disagree — see [A12.5](#adr12-revisit). Public visibility means mistakes are public |
-| **What we accept** | **A mistake committed here is permanent**, because a public repository is mirrored, cloned and indexed faster than it can be rewritten. Force-pushing `main` does not unpublish anything. This is bounded by three controls: the hygiene job in `docs.yml` fails the build on credential patterns; `main` is protected so nothing reaches it without review; and [`SECURITY.md`](../../SECURITY.md) instructs finders to report committed secrets **privately**, because a public issue is a pointer to the secret |
+| **What we accept** | **A mistake committed here is permanent**, because a public repository is mirrored, cloned and indexed faster than it can be rewritten. Force-pushing `master` does not unpublish anything. This is bounded by three controls: the hygiene job in `docs.yml` fails the build on credential patterns; `master` is protected so nothing reaches it without review; and [`SECURITY.md`](../../SECURITY.md) instructs finders to report committed secrets **privately**, because a public issue is a pointer to the secret |
 
 ## A12.4 Alternatives considered {#adr12-alternatives}
 
@@ -73,6 +73,6 @@ never changes again; this tree now changes daily, by people the lead maintainer 
 | Trigger | Threshold | Then |
 |---|---|---|
 | The ledger and git history disagree about what is done | Any occurrence | The ledger is authoritative for *status*; git is authoritative for *content*. If they diverge repeatedly, open an ADR on replacing the ledger with GitHub Projects |
-| Credential or real data reaches `main` | Any occurrence | Rotate first, then rewrite history, then treat the CI check's miss as the actual defect and strengthen it |
+| Credential or real data reaches `master` | Any occurrence | Rotate first, then rewrite history, then treat the CI check's miss as the actual defect and strengthen it |
 | The repository gains a second contributing organisation | First occurrence | [`GOVERNANCE.md` §6](../../GOVERNANCE.md#6-evolving-this-document) requires a written charter with named representation |
 | Review queue exceeds sustainable throughput | >8 open PRs for >2 weeks | Recruit maintainers ([`GOVERNANCE.md` §4](../../GOVERNANCE.md#4-becoming-a-maintainer)); do not solve it by merging with less review |

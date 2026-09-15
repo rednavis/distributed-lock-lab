@@ -3,9 +3,14 @@
 **A distributed lock is not what makes your critical section safe. This repository proves it, by
 experiment, in about ninety seconds.**
 
+[![docs](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml)
+[![pages](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-specification--complete%2C%20pre--implementation-orange.svg)](#project-status)
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+📖 **[Read the documentation site →](https://rednavis.github.io/distributed-lock-lab/)** — the full
+doc set with search and working cross-references.
 
 ---
 
@@ -155,7 +160,7 @@ Nothing to build yet — M0 is what creates the build. Until then:
 Once M0 lands, the local path is a single command and requires no cloud account:
 
 ```console
-git clone https://github.com/AlexOreshkevich/distributed-lock-lab.git
+git clone https://github.com/rednavis/distributed-lock-lab.git
 cd distributed-lock-lab
 ./gradlew build          # builds all modules, runs the full test suite
 docker compose up        # local stack: both backends, the rail, the services

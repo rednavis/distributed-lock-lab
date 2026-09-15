@@ -1,0 +1,90 @@
+# Build and publish the documentation site to GitHub Pages.
+#
+# The doc set is the project's primary deliverable right now -- there is no code
+# yet -- so it gets a real site with search and working cross-references rather
+# than relying on github.com's file browser.
+#
+# Jekyll is used because GitHub Pages' own plugin set solves the one hard
+# problem here: jekyll-optional-front-matter renders Markdown that has no front
+# matter, and jekyll-relative-links rewrites [text](other.md) into working URLs.
+# Together they let every source file stay clean for reading on github.com while
+# still producing a navigable site. See _config.yml.
+name: pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '**.md'
+      - '_config.yml'
+      - 'Gemfile'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Do not cancel a running deploy -- a half-published
+# site is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build site
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+
+      # A build that silently drops pages is the failure mode here: an excluded
+      # or unrendered file 404s for a contributor following a link from the
+      # README. Fail loudly instead.
+      - name: Verify the key pages were generated
+        run: |
+          set -e
+          missing=0
+          for f in _site/index.html \
+                   _site/CONTRIBUTING.html \
+                   _site/ROADMAP.html \
+                   _site/tasks/README.html \
+                   _site/docs/README.html \
+                   _site/docs/00-charter.html \
+                   _site/docs/12-parallelization-map.html \
+                   _site/docs/contracts/C1-database-schemas.html; do
+            [ -f "$f" ] || { echo "::error::missing generated page $f"; missing=1; }
+          done
+          n=$(find _site/tasks -name 'T-*.html' | wc -l)
+          echo "task pages generated: $n"
+          [ "$n" -eq 63 ] || { echo "::error::expected 63 task pages, got $n"; missing=1; }
+          exit $missing
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

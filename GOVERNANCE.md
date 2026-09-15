@@ -60,8 +60,9 @@ Review is about the change, never the person. Reviewers are bound by the
 [Code of Conduct](CODE_OF_CONDUCT.md) exactly as contributors are, and "the review was technically
 correct" is not a defence to a hostile one.
 
-**Merge strategy:** squash merge to `main`, with the pull request title as the commit subject. `main`
-is protected: no direct pushes, required status checks, required review, linear history.
+**Merge strategy:** GitHub Flow — feature branches off `master`, squash merge back, with the pull
+request title as the commit subject. `master` is protected: no direct pushes, required status checks,
+required review, linear history.
 
 ## 4. Becoming a maintainer
 

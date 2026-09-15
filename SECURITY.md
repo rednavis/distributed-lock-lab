@@ -32,7 +32,7 @@ The project is pre-release. There are no supported versions yet, and no security
 
 | Version | Supported |
 |---|---|
-| `main` | Fixes land here |
+| `master` | Fixes land here |
 | Everything else | — |
 
 This table will be replaced when the project makes its first tagged release.
@@ -42,7 +42,7 @@ This table will be replaced when the project makes its first tagged release.
 **Please do not open a public issue for a security vulnerability.**
 
 Use GitHub's private vulnerability reporting:
-**[Report a vulnerability](https://github.com/AlexOreshkevich/distributed-lock-lab/security/advisories/new)**
+**[Report a vulnerability](https://github.com/rednavis/distributed-lock-lab/security/advisories/new)**
 (Security tab → Report a vulnerability).
 
 If that is unavailable to you, contact the lead maintainer

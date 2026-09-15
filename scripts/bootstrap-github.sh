@@ -213,7 +213,7 @@ if [ "$DRY_RUN" -eq 0 ] && [ "$MODE" = "all" ]; then
 
 Next steps, by hand:
   1. Settings -> General: enable Discussions (SUPPORT.md links to them).
-  2. Settings -> Branches: protect `main` -- require a PR, require the `build`,
+  2. Settings -> Branches: protect `master` -- require a PR, require the `build`,
      `docs` and `dco` checks, require linear history, no direct pushes.
   3. Settings -> Security: enable private vulnerability reporting (SECURITY.md
      links to the advisory form) and secret scanning with push protection.

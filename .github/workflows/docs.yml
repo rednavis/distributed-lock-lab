@@ -7,7 +7,7 @@ name: docs
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
@@ -30,7 +30,7 @@ jobs:
       # hits a 404 at exactly the moment they needed the authoritative answer.
       #
       # Two link forms are legitimately unresolvable on disk and are skipped:
-      #   ../blob/main/... and ../../issues?...  are GitHub-relative URLs that only
+      #   ../blob/master/... and ../../issues?...  are GitHub-relative URLs that only
       #     resolve once rendered on github.com (used by issue and PR templates);
       #   Cn-....md and T-0NN-... are placeholders inside authoring templates.
       - name: Check relative links point at files that exist

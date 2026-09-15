@@ -1,6 +1,6 @@
 # Label definitions for distributed-lock-lab.
 #
-# Applied by .github/workflows/labels.yml on push to main, or by hand:
+# Applied by .github/workflows/labels.yml on push to master, or by hand:
 #   gh label create "type:task" --color "1d76db" --description "..." --force
 #
 # Keep this file as the single source of truth. A label created ad hoc in the web

@@ -80,7 +80,7 @@ to someone.
 Until milestone M0 lands there is no build to run — creating it *is* M0. From M0 onward:
 
 ```console
-git clone https://github.com/AlexOreshkevich/distributed-lock-lab.git
+git clone https://github.com/rednavis/distributed-lock-lab.git
 cd distributed-lock-lab
 ./gradlew build            # all modules, full test suite
 ./gradlew spotlessApply    # format before committing
@@ -100,7 +100,11 @@ dedicated Google Cloud project you are willing to delete.
 
 ### Branches and commits
 
-Trunk-based, short-lived branches, squash merge. Branch from `main`:
+**GitHub Flow.** `master` is the only long-lived branch. All work happens on a short-lived feature
+branch off `master` and is squash-merged back through a reviewed pull request. Nothing is ever pushed
+directly to `master` — branch protection enforces this.
+
+Name the branch after its task:
 
 ```
 <type>/<task-id>-<slug>      feat/T-011-pg-tryacquire

@@ -7,7 +7,7 @@ name: terraform
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ['deploy/terraform/**']
   pull_request:
     paths: ['deploy/terraform/**']

@@ -17,7 +17,7 @@ body:
         and fails at every integration point three milestones later.
 
         Changing a contract needs **two maintainer approvals**, an amendment row in
-        [04 §4.5](../blob/main/docs/04-contracts.md#c-changelog), and a revisit of every
+        [04 §4.5](../blob/master/docs/04-contracts.md#c-changelog), and a revisit of every
         dependent task specification — in that order, *then* implementation.
 
   - type: dropdown

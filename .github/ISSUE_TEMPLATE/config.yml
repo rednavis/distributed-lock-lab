@@ -1,18 +1,18 @@
 blank_issues_enabled: true
 contact_links:
   - name: Question or discussion
-    url: https://github.com/AlexOreshkevich/distributed-lock-lab/discussions
+    url: https://github.com/rednavis/distributed-lock-lab/discussions
     about: >
       Questions about the design, how to approach a task, or whether something is a bug.
       No question about this codebase is too basic.
   - name: Report a security vulnerability
-    url: https://github.com/AlexOreshkevich/distributed-lock-lab/security/advisories/new
+    url: https://github.com/rednavis/distributed-lock-lab/security/advisories/new
     about: >
       Privately, never as a public issue. Fencing and token-monotonicity flaws belong here
       too, even though the software is not production-ready.
   - name: Find something to work on
-    url: https://github.com/AlexOreshkevich/distributed-lock-lab/blob/main/tasks/README.md
+    url: https://github.com/rednavis/distributed-lock-lab/blob/master/tasks/README.md
     about: 63 task specifications, each with preconditions, deliverables and verification commands.
   - name: Code of Conduct
-    url: https://github.com/AlexOreshkevich/distributed-lock-lab/blob/main/CODE_OF_CONDUCT.md
+    url: https://github.com/rednavis/distributed-lock-lab/blob/master/CODE_OF_CONDUCT.md
     about: How we behave here, and how to report behaviour that falls short.
