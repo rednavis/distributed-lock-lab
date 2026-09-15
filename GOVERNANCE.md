@@ -15,9 +15,9 @@ So, honestly:
 
 | | |
 |---|---|
-| **Lead maintainer** | [@AlexOreshkevich](https://github.com/AlexOreshkevich) |
+| **Lead maintainer** | [@nirmata78](https://github.com/nirmata78) |
 | **Decision model** | Lead maintainer decides; disagreement is resolved in public, in the issue |
-| **Maintainers** | Listed in [`MAINTAINERS.md`](MAINTAINERS.md) |
+| **Maintainers** | [@nirmata78](https://github.com/nirmata78), [@HvorostenkoAlexander](https://github.com/HvorostenkoAlexander) — see [`MAINTAINERS.md`](MAINTAINERS.md) |
 | **Governance review** | When the project reaches three active maintainers, or by request — see [§6](#6-evolving-this-document) |
 
 What this buys you as a contributor: decisions are fast and someone is accountable for them. What it
@@ -44,6 +44,12 @@ Not every change carries the same risk, so not every change carries the same pro
 
 Where two approvals are required, they must come from two different people, and the author does not
 count as one of them.
+
+**A note on enforcement.** Branch protection cannot express a per-path approval count, so it requires
+**one** approval globally; the second, on the surfaces marked above, is a convention the maintainers
+uphold. [`CODEOWNERS`](.github/CODEOWNERS) lists both maintainers on exactly those paths so that the
+review request actually reaches someone. Stating the gap is better than implying a machine is watching
+it.
 
 ## 3. Review {#review}
 

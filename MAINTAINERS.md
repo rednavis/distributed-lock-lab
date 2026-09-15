@@ -7,11 +7,16 @@ left is [`GOVERNANCE.md` §4](GOVERNANCE.md#4-becoming-a-maintainer).
 
 | Maintainer | Role | Areas |
 |---|---|---|
-| [@AlexOreshkevich](https://github.com/AlexOreshkevich) | Lead maintainer | Everything, currently. Design authority for the contracts and the decision records |
+| [@nirmata78](https://github.com/nirmata78) | Lead maintainer | Everything. Design authority for the contracts and the decision records |
+| [@HvorostenkoAlexander](https://github.com/HvorostenkoAlexander) | Maintainer | Review across the repository, with the two-approval surfaces below |
 
-That is the whole list, and it is meant to grow. The project is deliberately structured — independent
-task specifications, authoritative contracts, a published dependency graph — so that people can
-contribute meaningfully without the lead maintainer in the loop on every decision.
+Two maintainers is the minimum that makes [`GOVERNANCE.md` §2](GOVERNANCE.md#2-what-requires-what)
+real rather than aspirational: the contracts, the decision records and `lock-api` each require **two
+approvals**, and until now there was only one person who could give one.
+
+The list is meant to keep growing. The project is deliberately structured — independent task
+specifications, authoritative contracts, a published dependency graph — so that people can contribute
+meaningfully without the lead maintainer in the loop on every decision.
 
 ## Areas looking for an owner
 

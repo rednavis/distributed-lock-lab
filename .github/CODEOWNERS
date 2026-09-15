@@ -3,41 +3,55 @@
 # Every line assigns reviewers to a path pattern. The LAST matching pattern wins,
 # so the most specific rules are at the bottom.
 #
+# A handle here MUST resolve to a user with write access to this repository.
+# GitHub silently ignores an owner it cannot resolve: no review is requested,
+# nothing warns you, and the gap only surfaces when a change that needed a
+# second reviewer merges without one. That has already happened once in this
+# repository — see the commit that replaced a non-existent handle.
+#
+# Verify after editing:
+#   gh api repos/rednavis/distributed-lock-lab/collaborators/<handle>
+#
 # Update this file in the same pull request that changes MAINTAINERS.md.
-# See GOVERNANCE.md for how many approvals each kind of change needs.
+# See GOVERNANCE.md §2 for how many approvals each kind of change needs.
 
 # Default owner for everything not matched below.
-*                                   @AlexOreshkevich
+*                                   @nirmata78
 
-# --- Authoritative contracts -------------------------------------------------
-# Changes here require TWO maintainer approvals (GOVERNANCE.md §2) and an
+# --- Two-maintainer surfaces -------------------------------------------------
+# GOVERNANCE.md §2 requires TWO approvals for these. Branch protection cannot
+# express a per-path approval count, so it enforces one approval globally and
+# the second is a convention the reviewers uphold. Listing both owners here is
+# what makes that convention mechanically possible: either can supply the
+# review, and both are notified.
+
+# Authoritative contracts. A change here is breaking by definition and needs an
 # amendment row in docs/04-contracts.md §4.5. Never amended silently in a PR.
-/docs/contracts/                    @AlexOreshkevich
-/docs/04-contracts.md               @AlexOreshkevich
+/docs/contracts/                    @nirmata78 @HvorostenkoAlexander
+/docs/04-contracts.md               @nirmata78 @HvorostenkoAlexander
 
-# --- Decision records --------------------------------------------------------
-# Reversing an ADR requires a new superseding ADR, not an edit to the old one.
-/docs/adr/                          @AlexOreshkevich
+# Decision records. Reversing one requires a new superseding ADR, never an edit
+# to the accepted file.
+/docs/adr/                          @nirmata78 @HvorostenkoAlexander
 
-# --- The dependency-free contract module -------------------------------------
-# lock-api has zero third-party dependencies by contract; six modules depend on
-# it. Any change is a wire-compatibility change. TWO approvals.
-/lock-api/                          @AlexOreshkevich
+# The dependency-free contract module. Six modules depend on it, so any change
+# is a wire-compatibility change.
+/lock-api/                          @nirmata78 @HvorostenkoAlexander
 
 # --- Project governance ------------------------------------------------------
-/GOVERNANCE.md                      @AlexOreshkevich
-/MAINTAINERS.md                     @AlexOreshkevich
-/CODE_OF_CONDUCT.md                 @AlexOreshkevich
-/SECURITY.md                        @AlexOreshkevich
-/LICENSE                            @AlexOreshkevich
-/NOTICE                             @AlexOreshkevich
-/.github/CODEOWNERS                 @AlexOreshkevich
+/GOVERNANCE.md                      @nirmata78
+/MAINTAINERS.md                     @nirmata78
+/CODE_OF_CONDUCT.md                 @nirmata78
+/SECURITY.md                        @nirmata78
+/LICENSE                            @nirmata78
+/NOTICE                             @nirmata78
+/.github/CODEOWNERS                 @nirmata78
 
 # --- CI and supply chain -----------------------------------------------------
 # A workflow change can exfiltrate secrets or execute untrusted input.
-/.github/workflows/                 @AlexOreshkevich
-/.github/dependabot.yml             @AlexOreshkevich
-/gradle/libs.versions.toml          @AlexOreshkevich
+/.github/workflows/                 @nirmata78 @HvorostenkoAlexander
+/.github/dependabot.yml             @nirmata78
+/gradle/libs.versions.toml          @nirmata78 @HvorostenkoAlexander
 
 # --- Infrastructure that bills -----------------------------------------------
-/deploy/terraform/                  @AlexOreshkevich
+/deploy/terraform/                  @nirmata78 @HvorostenkoAlexander
