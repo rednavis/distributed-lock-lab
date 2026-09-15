@@ -3,6 +3,11 @@
 # Documentation is a first-class deliverable in this repository: the design is
 # written before the code, so a broken cross-reference is a real defect. These
 # checks run today, on a repository that has no code yet.
+#
+# The logic lives in scripts/check-docs.sh so that contributors can run exactly
+# what CI runs, locally, before opening a pull request:
+#
+#     ./scripts/check-docs.sh
 name: docs
 
 on:
@@ -19,114 +24,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  links:
-    name: internal links resolve
+  check:
+    name: docs checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # The doc set leans on ~43 pinned anchors across five contract documents. A
-      # link to a file that does not exist means a contributor following the docs
-      # hits a 404 at exactly the moment they needed the authoritative answer.
-      #
-      # Two link forms are legitimately unresolvable on disk and are skipped:
-      #   ../blob/master/... and ../../issues?...  are GitHub-relative URLs that only
-      #     resolve once rendered on github.com (used by issue and PR templates);
-      #   Cn-....md and T-0NN-... are placeholders inside authoring templates.
-      - name: Check relative links point at files that exist
-        run: |
-          set -uo pipefail
-          rm -f /tmp/broken && : > /tmp/broken
+      - name: Relative links resolve
+        run: ./scripts/check-docs.sh links
 
-          find . -name '*.md' -not -path './.git/*' | while IFS= read -r src; do
-            grep -oE '\]\([^)]+\)' "$src" 2>/dev/null \
-              | sed -E 's/^\]\(//; s/\)$//' \
-              | grep -vE '^(https?:|mailto:|#)' \
-              | grep -vE '(\.\./)+(blob|tree|issues|pull|discussions|security)' \
-              | grep -vE '(Cn-\.\.\.\.md|T-0NN|<.*>)' \
-              | sed -E 's/#.*$//' \
-              | grep -v '^$' \
-              | while IFS= read -r target; do
-                  if [ ! -e "$(dirname "$src")/$target" ]; then
-                    echo "::error file=$src::broken link -> $target"
-                    echo "$src -> $target" >> /tmp/broken
-                  fi
-                done
-          done
+      - name: Repository hygiene
+        run: ./scripts/check-docs.sh hygiene
 
-          n=$(sort -u /tmp/broken | grep -c . || true)
-          if [ "$n" -gt 0 ]; then
-            echo "$n broken relative link(s). See annotations above."
-            exit 1
-          fi
-          echo "All relative links resolve."
-
-  hygiene:
-    name: repository hygiene
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # The domain modelled here is fictional and must stay that way, and no real
-      # data may enter the repository. See SECURITY.md and NOTICE.
-      # .github/workflows is excluded because this job's own pattern definition
-      # lives there and would otherwise match itself on every run.
-      - name: No obvious secrets or credentials
-        run: |
-          set -uo pipefail
-          if grep -rInE '(BEGIN [A-Z ]*PRIVATE KEY|AIza[0-9A-Za-z_-]{35}|-----BEGIN CERTIFICATE)' \
-               --exclude-dir=.git --exclude-dir=workflows . ; then
-            echo "::error::Possible credential material committed. See SECURITY.md."
-            exit 1
-          fi
-          echo "No credential patterns found."
-
-      - name: Required community files are present
-        run: |
-          set -e
-          for f in README.md LICENSE NOTICE CONTRIBUTING.md CODE_OF_CONDUCT.md \
-                   SECURITY.md GOVERNANCE.md SUPPORT.md MAINTAINERS.md ROADMAP.md \
-                   AGENTS.md .github/CODEOWNERS; do
-            [ -f "$f" ] || { echo "::error::missing $f"; exit 1; }
-          done
-          echo "All community health files present."
-
-  ledger:
-    name: task board matches tasks/
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # tasks/README.md is the ledger and the resume point. A specification that
-      # exists but is absent from the board is invisible; a board row pointing at a
-      # missing file sends a contributor to a 404.
-      # Split tasks (T-016a / T-016b) share one specification file, so ids are
-      # normalised by stripping any trailing a/b before comparing the two sets.
-      - name: Every specification has a ledger row, and vice versa
-        run: |
-          set -uo pipefail
-          fail=0
-
-          # ids that have a specification file
-          ls tasks/T-*.md | sed -E 's#.*/(T-[0-9]{3}).*#\1#' | sort -u > /tmp/specs
-
-          # ids referenced by a ledger row: "| [T-016a](...)" or "| T-016 |"
-          grep -oE '^\| \[?T-[0-9]{3}' tasks/README.md \
-            | sed -E 's/^\| \[?//' | sort -u > /tmp/rows
-
-          while IFS= read -r id; do
-            grep -qx "$id" /tmp/rows || {
-              echo "::error file=tasks/README.md::$id has a specification but no ledger row"
-              fail=1
-            }
-          done < /tmp/specs
-
-          while IFS= read -r id; do
-            grep -qx "$id" /tmp/specs || {
-              echo "::error file=tasks/README.md::ledger row $id has no specification file"
-              fail=1
-            }
-          done < /tmp/rows
-
-          echo "specifications: $(wc -l < /tmp/specs), ledger ids: $(wc -l < /tmp/rows)"
-          exit $fail
+      - name: Task board matches tasks/
+        run: ./scripts/check-docs.sh ledger
