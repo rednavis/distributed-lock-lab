@@ -4,10 +4,14 @@
 #
 #   ./scripts/bootstrap-project.sh --dry-run
 #   ./scripts/bootstrap-project.sh
+#   ./scripts/bootstrap-project.sh --number 3     # use an existing board
 #
-# Creates an organisation-level Project, adds all open task issues to it, and
-# sets the Status field so the board opens in a useful state rather than one
-# undifferentiated column.
+# Adds every open task issue to an organisation-level Project, and sets a board
+# readme explaining how to read it.
+#
+# By default it reuses a project whose title matches, and creates one only if
+# none exists. Pass --number to target a specific existing board -- which is the
+# normal case when somebody created it in the web UI.
 #
 # Idempotent: re-running reuses an existing project of the same title and skips
 # issues already on the board. Safe to re-run after adding task specifications.
@@ -24,12 +28,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=0
-for arg in "$@"; do
-  case "$arg" in
+WANT_NUMBER="${PROJECT_NUMBER:-}"
+while [ $# -gt 0 ]; do
+  case "$1" in
     --dry-run) DRY_RUN=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
-    *) echo "unknown argument: $arg (try --help)" >&2; exit 2 ;;
+    --number)  WANT_NUMBER="${2:-}"; shift ;;
+    --number=*) WANT_NUMBER="${1#*=}" ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
+    *) echo "unknown argument: $1 (try --help)" >&2; exit 2 ;;
   esac
+  shift
 done
 
 OWNER="${PROJECT_OWNER:-rednavis}"
@@ -61,17 +69,31 @@ echo "project: $TITLE"
 echo
 
 # ------------------------------------------------------------- the project ---
-NUMBER="$(gh project list --owner "$OWNER" --format json \
-            --jq ".projects[] | select(.title==\"$TITLE\") | .number" 2>/dev/null | head -1)"
-
-if [ -n "$NUMBER" ]; then
-  echo "project #$NUMBER already exists, reusing"
-elif [ "$DRY_RUN" -eq 1 ]; then
-  echo "[dry-run] would create project \"$TITLE\""
-  NUMBER="DRYRUN"
+if [ -n "$WANT_NUMBER" ]; then
+  # An explicit board was named. Verify it exists rather than silently
+  # creating a second one alongside it -- duplicate boards are how a team ends
+  # up tracking the same work in two places.
+  actual_title="$(gh project view "$WANT_NUMBER" --owner "$OWNER" --format json \
+                    --jq '.title' 2>/dev/null || true)"
+  if [ -z "$actual_title" ]; then
+    echo "error: no project #$WANT_NUMBER under '$OWNER' (or it is not visible to this token)" >&2
+    exit 1
+  fi
+  NUMBER="$WANT_NUMBER"
+  TITLE="$actual_title"
+  echo "using existing project #$NUMBER: $TITLE"
 else
-  NUMBER="$(gh project create --owner "$OWNER" --title "$TITLE" --format json --jq '.number')"
-  echo "created project #$NUMBER"
+  NUMBER="$(gh project list --owner "$OWNER" --format json \
+              --jq ".projects[] | select(.title==\"$TITLE\") | .number" 2>/dev/null | head -1)"
+  if [ -n "$NUMBER" ]; then
+    echo "project #$NUMBER already exists, reusing"
+  elif [ "$DRY_RUN" -eq 1 ]; then
+    echo "[dry-run] would create project \"$TITLE\""
+    NUMBER="DRYRUN"
+  else
+    NUMBER="$(gh project create --owner "$OWNER" --title "$TITLE" --format json --jq '.number')"
+    echo "created project #$NUMBER"
+  fi
 fi
 
 if [ "$DRY_RUN" -eq 0 ]; then
