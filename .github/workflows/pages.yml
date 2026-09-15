@@ -48,6 +48,12 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
+      # Gives front matter to README/CONTRIBUTING/CODE_OF_CONDUCT, which
+      # jekyll-optional-front-matter skips by design. Mutates the checkout;
+      # the committed files stay clean. See the script's header.
+      - name: Stage pages for Jekyll
+        run: ./scripts/prepare-site.sh
+
       - name: Build site
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
@@ -62,12 +68,16 @@ jobs:
           missing=0
           for f in _site/index.html \
                    _site/CONTRIBUTING.html \
+                   _site/CODE_OF_CONDUCT.html \
                    _site/ROADMAP.html \
+                   _site/GOVERNANCE.html \
                    _site/tasks/README.html \
                    _site/docs/README.html \
                    _site/docs/00-charter.html \
+                   _site/docs/11-glossary.html \
                    _site/docs/12-parallelization-map.html \
-                   _site/docs/contracts/C1-database-schemas.html; do
+                   _site/docs/contracts/C1-database-schemas.html \
+                   _site/docs/adr/ADR-012-git-and-public-publication.html; do
             [ -f "$f" ] || { echo "::error::missing generated page $f"; missing=1; }
           done
           n=$(find _site/tasks -name 'T-*.html' | wc -l)

@@ -87,9 +87,11 @@ defaults:
     values:
       layout: default
 
-  # Landing page
+  # Landing page. `permalink: /` renders README.md as the site root
+  # (_site/index.html) instead of _site/README.html, so the root URL works and
+  # every [..](README.md) cross-reference still resolves.
   - scope: { path: "README.md" }
-    values: { title: "Home", nav_order: 1 }
+    values: { title: "Home", nav_order: 1, permalink: "/" }
 
   # Getting involved
   - scope: { path: "CONTRIBUTING.md" }
