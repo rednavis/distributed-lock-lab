@@ -47,7 +47,11 @@ it.
 
 ## 3. Ledger
 
-**Progress: 0 of 63 done.**
+**Progress: 0 of 63 done · 1 claimed.**
+
+> The board and the GitHub issues are two views of the same thing. Issues are the working surface;
+> **this ledger is the durable record.** If they disagree, this file is authoritative and the
+> discrepancy is worth reporting.
 
 ### M0 — Foundations
 
@@ -56,7 +60,7 @@ priority in the project.
 
 | Task | Title | Blocked by | Status | Notes |
 |---|---|---|---|---|
-| [T-001](T-001-monorepo-skeleton.md) | Monorepo skeleton and Gradle settings | — | Not started | **Fan-out: blocks all Java work** |
+| [T-001](T-001-monorepo-skeleton.md) | Monorepo skeleton and Gradle settings | — | **Claimed** | [@HvorostenkoAlexander](https://github.com/HvorostenkoAlexander), 2026-09-15 · [#11](https://github.com/rednavis/distributed-lock-lab/issues/11). **Fan-out: blocks all Java work** |
 | [T-002](T-002-version-catalog.md) | The version catalog | T-001 | Not started | `good first issue` |
 | [T-003](T-003-convention-plugins.md) | Convention plugins, Spotless, Google Java Style | T-002 | Not started | **Fan-out: unblocks T-004…T-008** |
 | [T-004](T-004-lock-api-types.md) | `lock-api`: the contract types | T-003 | Not started | **Fan-out: six modules depend on this** |
