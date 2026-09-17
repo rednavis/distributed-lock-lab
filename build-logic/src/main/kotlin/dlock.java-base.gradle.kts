@@ -57,3 +57,35 @@ tasks.withType<Test>().configureEach {
         events("failed", "skipped")
     }
 }
+
+// The deterministic simulation suite is the project's cheap correctness signal and runs on every pull
+// request (T-006). It is its own task, and excluded from `test`, so a unit run stays fast and a
+// simulation failure reports as itself. It must exit 0 while M4 has not written a single
+// *SimulationTest yet (T-043 writes the first): a task that failed on an empty set would block all of
+// M0. The configureEach block above already gives it the JUnit platform and the single fork.
+// Resolved here, not inside the task block: there the receiver is the task, and `the<…>()` would look
+// the extension up on the task instead of the project.
+val testSources = the<SourceSetContainer>()["test"]
+
+val simulationTest by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Runs the deterministic simulation tests (*SimulationTest). Green on an empty set."
+    testClassesDirs = testSources.output.classesDirs
+    classpath = testSources.runtimeClasspath
+    filter {
+        includeTestsMatching("*SimulationTest")
+        isFailOnNoMatchingTests = false
+    }
+}
+
+tasks.named<Test>("test") {
+    filter {
+        excludeTestsMatching("*SimulationTest")
+        // Gradle treats an exclusion as a filter, and fails with "No tests found for given includes"
+        // once it removes a module's last test class -- which is exactly what happens to a module whose
+        // only tests are simulations (harness, after T-043). This does not weaken any assertion: what it
+        // gives up is the error on a mistyped command-line `--tests` pattern, which then reports zero
+        // tests run instead of failing. CI runs the whole suite, so the typo cannot hide there.
+        isFailOnNoMatchingTests = false
+    }
+}

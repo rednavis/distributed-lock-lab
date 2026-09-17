@@ -1,45 +1,58 @@
 # Gradle build, test and style check.
+#
+# Ordered so the cheapest possible failure happens first: a formatting violation
+# fails in `format` in under a minute, instead of after a full build. A long wait
+# to learn about an import order teaches contributors to skip CI.
 name: build
 
 on:
   push:
     branches: [master]
   pull_request:
+    branches: [master]
   workflow_dispatch:
 
+# Nothing here writes to the repository. A workflow that only builds has no use
+# for a write token, and carrying one is a supply-chain hazard for no benefit.
 permissions:
   contents: read
 
+# A force-push must not leave two runs competing for the same cache.
 concurrency:
-  group: build-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # The repository is specification-first: until T-001 lands there is no Gradle
-  # build to run. This gate lets CI be green and meaningful today, and start doing
-  # real work the moment M0 merges, without anyone having to remember to enable it.
-  detect:
-    name: gradle gate
+  format:
+    name: spotless
     runs-on: ubuntu-latest
-    outputs:
-      has-build: ${{ steps.check.outputs.has-build }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - id: check
-        run: |
-          if [ -f settings.gradle.kts ]; then
-            echo "has-build=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has-build=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No settings.gradle.kts yet — T-001 has not landed. Skipping the Gradle build."
-          fi
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      # Pull requests read the shared cache but never write it: a fork must not be
+      # able to poison the cache every later build restores from.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
+      # spotlessCheck, never spotlessApply: applying would mutate the checkout and
+      # make this job pass forever while the committed source stays unformatted.
+      - name: Style check
+        run: ./gradlew spotlessCheck
 
   build:
     name: gradle build
-    needs: detect
-    if: needs.detect.outputs.has-build == 'true'
+    needs: format
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -54,28 +67,35 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/master' }}
 
-      - name: Style check
-        run: ./gradlew spotlessCheck --no-daemon
-
       - name: Build and test
-        run: ./gradlew build --no-daemon
+        run: ./gradlew build --stacktrace
+
+      # Excluded from `test` and run here so a simulation failure reports as itself
+      # (build-logic/src/main/kotlin/dlock.java-base.gradle.kts). Green on an empty
+      # set until T-043 writes the first *SimulationTest.
+      - name: Deterministic simulation suite
+        run: ./gradlew simulationTest --stacktrace
 
       # lock-api carries the wire contract for six modules. If it ever acquires a
       # third-party dependency, every consumer inherits that version choice and the
       # contract becomes entangled with a framework's lifecycle (C2 #ct2-zero-dep).
       - name: Verify lock-api has zero third-party dependencies
         run: |
-          ./gradlew :lock-api:dependencies --configuration runtimeClasspath --no-daemon \
+          ./gradlew :lock-api:dependencies --configuration runtimeClasspath \
             | tee /tmp/deps.txt
           if grep -qE '^[\\+|].*---' /tmp/deps.txt; then
             echo "::error file=lock-api/build.gradle.kts::lock-api must have zero third-party dependencies (C2 #ct2-zero-dep)"
             exit 1
           fi
 
+      # The only forensic trail once the runner is gone, so it is uploaded even when
+      # the build failed -- which is the case where it matters.
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-reports
-          path: '**/build/reports/tests/**'
+          name: test-reports-${{ github.run_id }}
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
           retention-days: 7
