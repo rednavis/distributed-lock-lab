@@ -1,6 +1,6 @@
 // The module registry: the only place a module is declared (ADR-010 D2, C5 #ct5-modules).
-// The version catalog gradle/libs.versions.toml (T-002) is picked up by Gradle's default
-// convention as `libs`; no explicit wiring is needed here.
+// Exactly one version catalog, `libs`, is read from gradle/libs.versions.toml by Gradle's default
+// convention (C5 #ct5-catalog). Do not declare it again here: a second `from(...)` on `libs` fails.
 
 pluginManagement {
     includeBuild("build-logic")

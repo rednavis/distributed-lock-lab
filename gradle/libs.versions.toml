@@ -1,0 +1,57 @@
+# The version catalog: the single source of truth for every dependency and plugin version in this
+# repository (C5 #ct5-catalog). No version literal may appear in any other file.
+#
+# - Versions move FORWARD ONLY. Never pin back; if a version stops resolving, move forward and record it.
+# - A change here is reviewed as a contract-adjacent change: keep it in its own commit.
+# - "via BOM" libraries carry no version; the imported platform supplies it.
+
+[versions]
+spring-boot-bom = "4.1.0"
+postgresql = "42.7.5"
+flyway-core = "11.8.0"
+jetcd-core = "0.8.5"
+otel-bom = "1.49.0"
+lombok = "1.18.38"
+junit-bom = "5.13.0"
+assertj = "3.27.3"
+awaitility = "4.3.0"
+testcontainers-bom = "1.21.0"
+spotless-plugin = "7.0.3"
+google-java-format = "1.28.0"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot-bom" }
+spring-boot-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway-core" }
+# Moves in lockstep with flyway-core.
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway-core" }
+# lock-server only.
+jetcd-core = { module = "io.etcd:jetcd-core", version.ref = "jetcd-core" }
+micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+otel-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "otel-bom" }
+# Every Java module except lock-api, which has zero third-party dependencies (C2 #ct2-zero-dep).
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-bom" }
+# Not in C5 #ct5-catalog yet (recorded deviation); junit-bom supplies both versions. Gradle 9 fails every
+# test run without junit-platform-launcher on the test runtime classpath.
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers-bom" }
+# A Spotless step dependency, not a plugin.
+google-java-format = { module = "com.google.googlejavaformat:google-java-format", version.ref = "google-java-format" }
+
+[plugins]
+# Moves in lockstep with spring-boot-bom.
+spring-boot-plugin = { id = "org.springframework.boot", version.ref = "spring-boot-bom" }
+spotless-plugin = { id = "com.diffplug.spotless", version.ref = "spotless-plugin" }
+
+[bundles]
+# The JUnit entries carry no version: consume this bundle together with platform(libs.junit.bom).
+test = ["assertj", "junit-jupiter", "junit-platform-launcher"]
+service-observability = ["spring-boot-actuator", "micrometer-prometheus"]
+flyway = ["flyway-core", "flyway-postgresql"]
