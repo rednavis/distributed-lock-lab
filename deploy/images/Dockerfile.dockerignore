@@ -1,0 +1,24 @@
+# The build-context filter for deploy/images/Dockerfile. The context is the repository root, so BuildKit
+# reads <Dockerfile>.dockerignore next to the Dockerfile; a plain .dockerignore here would be ignored.
+# deploy/ itself stays in: it is a project in settings.gradle.kts, and Gradle 9 needs its directory.
+
+# Build output and caches: the image compiles from sources.
+**/build/
+**/.gradle/
+**/.kotlin/
+**/bin/
+**/out/
+
+# Not needed to build a service.
+docs/
+_site/
+.git/
+**/.terraform/
+
+# Local and secret files never enter an image.
+**/.env
+**/.env.*
+**/*.log
+.idea/
+.vscode/
+**/.DS_Store

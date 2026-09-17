@@ -27,6 +27,8 @@ override.tf.json
 # No credential may ever enter this repository. See SECURITY.md.
 .env
 .env.*
+# The template with lab-only placeholder values is committed; the filled-in .env never is.
+!.env.example
 *-key.json
 *_rsa
 *.pem

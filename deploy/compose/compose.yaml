@@ -1,0 +1,192 @@
+# The local, no-cloud stack (NFR-15, T-005). From this directory; `.env` is optional (see .env.example):
+#
+#   docker compose up -d                           # lockdb, paydb and etcd only
+#   docker compose --profile apps up -d --build    # plus the Java services, built from source
+#
+# Two PostgreSQL servers, never two schemas in one: the experiments stop or pause lockdb while paydb keeps
+# serving writes (ADR-003, C5 #ct5-config). Each database has its own volume and its own password variable.
+#
+# Image tags repeat postgres-image and etcd-image from gradle/libs.versions.toml (C5 #ct5-catalog); change a
+# version there and its tag here in the same commit.
+
+name: dlock-lab
+
+x-health-timing: &health-timing
+  interval: 3s
+  timeout: 2s
+  start_period: 5s
+  retries: 8
+
+x-app: &app
+  profiles: [apps]
+  # Java workloads are only ever built from deploy/images/Dockerfile, never pulled.
+  pull_policy: build
+
+# The documented weak local defaults: the same lab-only values as .env.example, so the stack also runs
+# without .env. Set the variable in .env to override one. Each is written once and feeds both its database
+# and the services that connect to it.
+x-lockdb-password: &lockdb-password ${SPRING_DATASOURCE_PASSWORD:-lab-only-lockdb}
+x-paydb-password: &paydb-password ${PAYMENTS_DATASOURCE_PASSWORD:-lab-only-paydb}
+
+services:
+  lockdb:
+    image: postgres:16.15
+    container_name: dlock-lockdb
+    environment:
+      POSTGRES_DB: lockdb
+      POSTGRES_USER: lockapp
+      POSTGRES_PASSWORD: *lockdb-password
+    ports:
+      - "5433:5432"
+    volumes:
+      - lockdb-data:/var/lib/postgresql/data
+    healthcheck:
+      # Its own user and database, over TCP: the image's bootstrap server listens on the Unix socket only,
+      # so a socket probe would report ready before POSTGRES_DB exists.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5432", "-U", "lockapp", "-d", "lockdb"]
+      <<: *health-timing
+
+  paydb:
+    image: postgres:16.15
+    container_name: dlock-paydb
+    environment:
+      POSTGRES_DB: paydb
+      POSTGRES_USER: payapp
+      POSTGRES_PASSWORD: *paydb-password
+    ports:
+      - "5434:5432"
+    volumes:
+      - paydb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5432", "-U", "payapp", "-d", "paydb"]
+      <<: *health-timing
+
+  etcd:
+    image: gcr.io/etcd-development/etcd:v3.6.14
+    container_name: dlock-etcd
+    # Flags rather than ETCD_* variables, so nothing here reads like the project's own ETCD_ENDPOINTS.
+    command:
+      - /usr/local/bin/etcd
+      - --name=dlock-etcd
+      - --data-dir=/var/lib/etcd/data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://dlock-etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://dlock-etcd:2380
+      - --initial-cluster=dlock-etcd=http://dlock-etcd:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=dlock-local
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - etcd-data:/var/lib/etcd
+    networks:
+      default:
+        # The etcd.endpoints default (C5 #ct5-config) names the in-cluster headless Service; this alias
+        # makes it resolve here too, with no override.
+        aliases: [dlock-etcd-headless]
+    healthcheck:
+      # The image is distroless: exec form only, there is no shell.
+      test: ["CMD", "etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+      <<: *health-timing
+
+  # The Java services. Environment variables follow C5 #ct5-env and carry only pinned keys; the
+  # service-to-service URLs are not pinned yet, and the task that adds each one adds it here. The two
+  # fencing kill switches are deliberately absent: they default to true (C5 #ct5-killswitches).
+
+  lock-server:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/images/Dockerfile
+      args:
+        MODULE: lock-server
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://lockdb:5432/lockdb
+      SPRING_DATASOURCE_USERNAME: lockapp
+      SPRING_DATASOURCE_PASSWORD: *lockdb-password
+      LOCK_BACKEND: pg
+      # ETCD_ENDPOINTS is deliberately unset: the default resolves through the alias on etcd.
+    depends_on:
+      lockdb:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+
+  payment-resource:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/images/Dockerfile
+      args:
+        MODULE: payment-resource
+    ports:
+      - "8082:8080"
+    environment:
+      PAYMENTS_DATASOURCE_URL: jdbc:postgresql://paydb:5432/paydb
+      PAYMENTS_DATASOURCE_USERNAME: payapp
+      PAYMENTS_DATASOURCE_PASSWORD: *paydb-password
+    depends_on:
+      paydb:
+        condition: service_healthy
+
+  rail-proxy:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/images/Dockerfile
+      args:
+        MODULE: rail-proxy
+    ports:
+      - "8083:8080"
+    environment:
+      PAYMENTS_DATASOURCE_URL: jdbc:postgresql://paydb:5432/paydb
+      PAYMENTS_DATASOURCE_USERNAME: payapp
+      PAYMENTS_DATASOURCE_PASSWORD: *paydb-password
+    depends_on:
+      paydb:
+        condition: service_healthy
+      rail-stub:
+        condition: service_started
+
+  rail-stub:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/images/Dockerfile
+      args:
+        MODULE: rail-stub
+    ports:
+      - "8090:8080"
+    environment:
+      # The C5 defaults, spelled out because these are the knobs the experiments turn.
+      RAIL_STUB_LATENCYMS: "250"
+      RAIL_STUB_FAILURERATE: "0.0"
+      RAIL_STUB_DUPLICATEACKRATE: "0.0"
+
+  payout-executor:
+    <<: *app
+    build:
+      context: ../..
+      dockerfile: deploy/images/Dockerfile
+      args:
+        MODULE: payout-executor
+    ports:
+      - "8084:8080"
+    environment:
+      LOCK_CLIENT_SAFETYMARGIN: "0.30"
+    depends_on:
+      lock-server:
+        condition: service_started
+      payment-resource:
+        condition: service_started
+      rail-proxy:
+        condition: service_started
+
+volumes:
+  lockdb-data:
+  paydb-data:
+  etcd-data:
