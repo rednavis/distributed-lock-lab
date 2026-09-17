@@ -26,11 +26,50 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: component
     attributes:
-      label: Component
-      placeholder: "lock-server/store.pg, rail-proxy, harness, deploy/terraform…"
+      label: Module
+      description: "The Gradle project (settings.gradle.kts) where the wrong behaviour shows up."
+      options:
+        - "lock-api"
+        - "lock-server"
+        - "lock-client"
+        - "payment-resource"
+        - "payout-executor"
+        - "rail-proxy"
+        - "rail-stub"
+        - "harness"
+        - "deploy"
+        - "Build or CI"
+    validations:
+      required: true
+
+  - type: input
+    id: event
+    attributes:
+      label: Log event name
+      description: "The `event` field of the structured log line closest to the problem (C4). Leave empty if there is none."
+      placeholder: "fenced_out"
+
+  - type: input
+    id: fencing-token
+    attributes:
+      label: Fencing token seen
+      description: "The token value in play, if any — presented, stored, or both."
+      placeholder: "presented 41, highest 42"
+
+  - type: dropdown
+    id: invariant-counters
+    attributes:
+      label: Were the invariant-violation counters non-zero?
+      description: "`lock.fenced.out` and `rail.duplicate.attempted` must be zero in normal operation (C4)."
+      options:
+        - "lock.fenced.out was non-zero"
+        - "rail.duplicate.attempted was non-zero"
+        - "Both were non-zero"
+        - "Both were zero"
+        - "Not observed"
     validations:
       required: true
 

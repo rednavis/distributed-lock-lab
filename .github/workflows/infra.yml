@@ -1,0 +1,67 @@
+# Terraform formatting, validation and lint.
+#
+# Authoring and validating HCL costs nothing and needs no cloud credentials --
+# which is why the whole M5 infrastructure lane can proceed in parallel with the
+# Java milestones. Nothing here ever runs `terraform apply`.
+#
+# `init -backend=false` is the whole reason this works offline: a plain `init`
+# reaches for the gs://dlock-tfstate backend and fails with a credentials error
+# that looks like a workflow bug (ADR-008).
+name: infra
+
+on:
+  push:
+    branches: [master]
+    paths: ['deploy/terraform/**', '.github/workflows/infra.yml']
+  pull_request:
+    paths: ['deploy/terraform/**', '.github/workflows/infra.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # 1.15 is the line C5 and ADR-008 pin. The catalog has no Terraform row yet,
+      # so this literal is the only place the patch version lives.
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '1.15.9'
+          terraform_wrapper: false
+
+      # Formatting first: the cheapest failure, and it needs no init.
+      - name: Format check
+        run: terraform fmt -check -recursive deploy/terraform
+
+      # Every directory holding a .tf file, because ADR-008 puts them in
+      # envs/<env>/ and modules/<noun>/ and none in deploy/terraform itself. Until
+      # T-050 adds the first one, deploy/terraform is validated as it stands, so
+      # init and validate run today rather than being skipped.
+      - name: Validate each module
+        run: |
+          set -euo pipefail
+          dirs="$(find deploy/terraform -name '*.tf' -exec dirname {} \; | sort -u)"
+          dirs="${dirs:-deploy/terraform}"
+          while read -r d; do
+            echo "==> $d"
+            terraform -chdir="$d" init -backend=false -input=false
+            terraform -chdir="$d" validate
+          done <<<"$dirs"
+
+      # Pinned for the same reason as Terraform; the catalog has no tflint row.
+      - uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+
+      - name: Lint
+        run: tflint --chdir=deploy/terraform --recursive

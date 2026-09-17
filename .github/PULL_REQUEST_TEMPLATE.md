@@ -72,6 +72,14 @@ deviation is a normal part of contributing here; an unrecorded one is
 indistinguishable from a bug for everyone who comes after you.
 -->
 
+## Contracts and docs
+
+- [ ] Contract anchors this change touches: <!-- e.g. #ct1-acquire, #ct5-catalog — or "none" -->
+- [ ] No contract changed — or, if one did, a row was added to [04 §4.5](../blob/master/docs/04-contracts.md#c-changelog) and every dependent task specification was revisited
+- [ ] `./gradlew spotlessCheck` was run
+- [ ] Tests were added — or the reason there are none is stated under "For the reviewer"
+- [ ] `docs/` and the ADRs are updated, or nothing in them describes what this changes
+
 ## Deviations from the specification
 
 <!--

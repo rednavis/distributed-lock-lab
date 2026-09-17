@@ -1,0 +1,62 @@
+name: "Design question"
+description: "Challenge or question a design decision recorded in an ADR"
+title: "[design] <the question, in one line>"
+labels: ["question", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for questioning a **decision**, not for reporting code that misbehaves
+        (use the bug report) or proposing a pinned name change (use
+        [contract change](?template=contract-change.yml)).
+
+        Every significant decision here is recorded in an ADR under
+        [docs/adr/](../blob/master/docs/adr/) with its alternatives and the conditions under
+        which it should be revisited. Naming the ADR is what makes the question answerable.
+
+  - type: dropdown
+    id: adr
+    attributes:
+      label: Which ADR does this challenge?
+      options:
+        - "ADR-001 — etcd as the consensus store"
+        - "ADR-002 — Fencing token source: ModRevision captured at grant time"
+        - "ADR-003 — lockdb and paydb are separate databases on separate Cloud SQL instances"
+        - "ADR-004 — The protected operation is a payout execution, not a balance update"
+        - "ADR-005 — GKE Autopilot: evictions accepted as budgeted unavailability"
+        - "ADR-006 — Conservative client-side lease expiry"
+        - "ADR-007 — A fencing proxy in front of a resource with no CAS"
+        - "ADR-008 — Terraform layout, remote state, and pinned provider versions"
+        - "ADR-009 — Managed Prometheus, and SLOs that live in the infrastructure repo"
+        - "ADR-010 — One repository, one Gradle build, one version list"
+        - "ADR-011 — Version control and publication are deliberately deferred"
+        - "ADR-012 — Git version control and public publication"
+        - "ADR-013 — Parallel contribution replaces strict sequencing"
+        - "ADR-014 — Apache-2.0 with DCO sign-off"
+        - "None — a gap no ADR covers"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: "Quote the part of the decision you are questioning, then ask."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: What you were trying to do
+      description: "The task, experiment or reading that raised it. Questions with context get answered."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative you have in mind
+      description: >
+        Optional. If the ADR's "Alternatives considered" section already lists it, say why
+        its reason for rejection does not hold here.
