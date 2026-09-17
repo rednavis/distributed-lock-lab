@@ -62,7 +62,7 @@ services:
       <<: *health-timing
 
   etcd:
-    image: gcr.io/etcd-development/etcd:v3.6.14
+    image: gcr.io/etcd-development/etcd:v3.7.1
     container_name: dlock-etcd
     # Flags rather than ETCD_* variables, so nothing here reads like the project's own ETCD_ENDPOINTS.
     command:
