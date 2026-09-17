@@ -1,0 +1,116 @@
+# Per-module container images: build, SBOM, provenance, and a conditional push.
+#
+# Every leg builds the one shared deploy/images/Dockerfile (T-005) with
+# --build-arg MODULE=<module>; there is no per-module image definition.
+#
+# Default-branch pushes only, never pull requests: a job that can push images
+# must not run on a fork's code. Until M5 provisions Artifact Registry, the
+# ARTIFACT_REGISTRY_PUSH repository variable is unset, so each leg builds, emits
+# its SBOM and skips the push -- the workflow is green without the registry.
+name: container
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# id-token is for Workload Identity Federation: GitHub's OIDC token is exchanged
+# for short-lived Google credentials. No service-account key exists, anywhere.
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    name: image (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # The five runnable services. lock-api and lock-client are libraries;
+        # harness is not deployed by this workflow.
+        module: [lock-server, payment-resource, payout-executor, rail-proxy, rail-stub]
+    env:
+      MODULE: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # A service without code has no bootJar, and the Dockerfile stops on that
+      # by design. Skip the leg instead of failing the matrix.
+      - name: Check for service code
+        id: code
+        run: |
+          if find "${MODULE}/src/main/java" -name '*.java' 2>/dev/null | grep -q .; then
+            echo "has-code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-code=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${MODULE} has no service code yet; skipping the image."
+          fi
+
+      # One immutable tag, <module>:<short-sha>, and nothing else (C5 #ct5-naming).
+      - name: Compute the image tag
+        id: tag
+        if: steps.code.outputs.has-code == 'true'
+        run: echo "image=europe-central2-docker.pkg.dev/dlock-lab/dlock/${MODULE}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+        if: steps.code.outputs.has-code == 'true'
+
+      - name: Build
+        if: steps.code.outputs.has-code == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/images/Dockerfile
+          build-args: MODULE=${{ matrix.module }}
+          tags: ${{ steps.tag.outputs.image }}
+          load: true
+
+      - name: Generate the SBOM
+        if: steps.code.outputs.has-code == 'true'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.tag.outputs.image }}
+          format: spdx-json
+          artifact-name: sbom-${{ matrix.module }}-${{ github.run_id }}.spdx.json
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Log in to Artifact Registry
+        if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: europe-central2-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      # Rebuilt from the builder's cache so Buildx can attach the SBOM and SLSA
+      # provenance attestations, which only exist on a pushed image.
+      - name: Push with provenance
+        if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/images/Dockerfile
+          build-args: MODULE=${{ matrix.module }}
+          tags: ${{ steps.tag.outputs.image }}
+          push: true
+          provenance: mode=max
+          sbom: true
+
+      - name: Report the skipped push
+        if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH != 'true'
+        run: |
+          echo "::notice::push skipped for ${MODULE}: ARTIFACT_REGISTRY_PUSH is not 'true' (Artifact Registry arrives in M5)."

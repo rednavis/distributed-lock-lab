@@ -1,12 +1,15 @@
 # Dependency update automation.
 #
-# Only ecosystems that actually exist in the tree are enabled. A Dependabot job
-# pointed at a directory that does not exist fails every run, and a permanently
-# red job trains people to ignore red -- which is the opposite of what the
-# automation is for.
+# Weekly, with an explicit pull-request limit on each, so the project is never
+# buried. Every ecosystem exists in the tree except Terraform, whose first .tf
+# file arrives with T-050 -- see its entry.
 #
-# The commented-out blocks below are correct and ready; uncomment each one in
-# the pull request that creates the directory it watches.
+# Container image versions: gradle/libs.versions.toml is the single place any
+# version lives (C5 #ct5-catalog), and deploy/compose/compose.yaml and
+# deploy/images/Dockerfile repeat postgres-image, etcd-image and temurin-image as
+# literal tags. Dependabot cannot see those catalog entries -- they are not Gradle
+# dependencies -- so its image pull requests change the tag only. Before merging
+# one, raise the matching *-image version in the catalog in the same pull request.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -19,47 +22,69 @@ updates:
     commit-message:
       prefix: "chore(ci)"
 
-  # Enable in T-002, which creates gradle/libs.versions.toml.
-  #
   # The version catalog is the single place any version appears, by contract
   # (C5 #ct5-catalog), so Dependabot produces one coherent PR per group rather
   # than scattering coordinates across build files.
-  #
-  # - package-ecosystem: "gradle"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "weekly"
-  #     day: "monday"
-  #   open-pull-requests-limit: 5
-  #   labels: ["type:chore", "area:build"]
-  #   commit-message:
-  #     prefix: "chore(deps)"
-  #   groups:
-  #     # Spring Boot's BOM governs a large coordinated surface; splitting its
-  #     # members across PRs produces combinations nobody tests.
-  #     spring:
-  #       patterns: ["org.springframework*"]
-  #     testing:
-  #       patterns: ["org.junit*", "org.assertj*", "org.testcontainers*", "org.awaitility*"]
-  #     observability:
-  #       patterns: ["io.micrometer*", "io.opentelemetry*"]
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["type:chore", "area:build"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Spring Boot's BOM governs a large coordinated surface; splitting its
+      # members across PRs produces combinations nobody tests.
+      spring:
+        patterns: ["org.springframework*"]
+      testing:
+        patterns: ["org.junit*", "org.assertj*", "org.testcontainers*", "org.awaitility*"]
+      observability:
+        patterns: ["io.micrometer*", "io.opentelemetry*"]
 
-  # Enable in T-050, which creates deploy/terraform/.
-  #
-  # - package-ecosystem: "terraform"
-  #   directory: "/deploy/terraform"
-  #   schedule:
-  #     interval: "monthly"
-  #   labels: ["type:chore", "area:infra"]
-  #   commit-message:
-  #     prefix: "chore(deps)"
+  # compose.yaml: the PostgreSQL and etcd images (T-005). The `docker` ecosystem
+  # reads only Dockerfiles and would find nothing here; compose files need
+  # `docker-compose`. Update the catalog too -- see the note at the top.
+  - package-ecosystem: "docker-compose"
+    directory: "/deploy/compose"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels: ["type:chore", "area:infra"]
+    commit-message:
+      prefix: "chore(deps)"
 
-  # Enable in T-005, which creates deploy/compose/.
-  #
-  # - package-ecosystem: "docker"
-  #   directory: "/deploy/compose"
-  #   schedule:
-  #     interval: "monthly"
-  #   labels: ["type:chore", "area:infra"]
-  #   commit-message:
-  #     prefix: "chore(deps)"
+  # The shared Dockerfile's eclipse-temurin JDK and JRE bases, which must move
+  # together. Update the catalog too -- see the note at the top.
+  - package-ecosystem: "docker"
+    directory: "/deploy/images"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels: ["type:chore", "area:infra"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      temurin:
+        patterns: ["eclipse-temurin"]
+
+  # Provider constraints. The terraform updater reads only the .tf files directly
+  # in the directory it is given, so /deploy/terraform itself would never match:
+  # ADR-008 puts every .tf file under envs/<env>/ and modules/<noun>/. Until T-050
+  # creates envs/dev, these globs match nothing and the job reports that it found
+  # no Terraform configuration.
+  - package-ecosystem: "terraform"
+    directories:
+      - "/deploy/terraform/envs/*"
+      - "/deploy/terraform/modules/*"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels: ["type:chore", "area:infra"]
+    commit-message:
+      prefix: "chore(deps)"
