@@ -18,6 +18,14 @@ production-ready.** It has, by deliberate design and as documented in
   treated as one.
 - **No data retention, redaction, or PII handling story.** The domain is fictional and the fixtures are
   synthetic.
+- **No authentication on any surface**, not only on the lock API: `payment-resource`, `rail-proxy` and
+  `rail-stub` accept any caller that can reach them.
+
+It is deployed, when it is deployed at all, only to a **throwaway Google Cloud project you are willing
+to delete**. No real money moves through it: the payment rail is a stub. No real payment data and no
+personal data are ever present. Credentials are never committed — they are projected at runtime from
+Secret Manager, or, locally, from a `.env` file that is not in the repository
+([C5 §5.7](docs/contracts/C5-config-build-and-naming.md#ct5-env)).
 
 These are tracked as [assumption A-13 and the security posture table](docs/03-architecture.md#arch-security),
 which also lists what a production version would have to add.
@@ -45,20 +53,14 @@ Use GitHub's private vulnerability reporting:
 **[Report a vulnerability](https://github.com/rednavis/distributed-lock-lab/security/advisories/new)**
 (Security tab → Report a vulnerability).
 
-If that is unavailable to you, contact the lead maintainer
-[@nirmata78](https://github.com/nirmata78) directly and ask for a private channel.
+That is the only reporting channel, and it reaches the maintainer privately.
 
-**What to expect:**
-
-| | |
-|---|---|
-| Acknowledgement | Within 5 working days |
-| Initial assessment | Within 10 working days |
-| Disclosure | Coordinated with you; we will not publish before you are ready, and we will not sit on it indefinitely either |
-| Credit | You are credited in the advisory unless you prefer otherwise |
-
-This is a volunteer project with one lead maintainer. These are honest targets rather than a
-contractual SLA, and if a deadline slips you will be told, not ignored.
+**What to expect — and what is deliberately not promised.** This is a volunteer project with one lead
+maintainer, so **no response time is promised: there is no service-level agreement here, stated or
+implied, and no commitment to respond within any particular period.** What you are told instead is how
+a report is handled when it is picked up: disclosure is coordinated with you, nothing is published
+before you are ready, and you are credited in the advisory unless you prefer otherwise. If you have
+had no reply and want to disclose publicly, that is yours to decide; you owe this project nothing.
 
 **Helpful reports include:** the affected component, the version or commit, reproduction steps, and
 what an attacker gains. A proof of concept is welcome but not required.
