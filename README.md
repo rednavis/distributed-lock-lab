@@ -1,50 +1,48 @@
 # distributed-lock-lab
 
-**A distributed lock is not what makes your critical section safe. This repository proves it, by
-experiment, in about ninety seconds.**
+**A distributed lock service for the payout queue of a fictional mid-size payment service provider,
+built to demonstrate one lesson: mutual exclusion does not protect a resource — the fencing token
+does.**
 
-[![docs](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml)
-[![pages](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-specification--complete%2C%20pre--implementation-orange.svg)](#project-status)
-[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+## The fencing demonstration
 
-📖 **[Read the documentation site →](https://rednavis.github.io/distributed-lock-lab/)** — the full
-doc set with search and working cross-references.
-
----
-
-## The experiment
-
-Two workers race to execute the same payout.
-
-Worker **A** acquires the lock, then stalls — a stop-the-world GC pause, a throttled container, a
-`SIGSTOP`. It stalls long enough that its lease expires. The lock service does exactly the right
-thing: it expires the lease on schedule and grants the lock to worker **B**. Worker **B** submits the
-payout to an external payment rail and posts the ledger entries.
-
-Then worker **A** wakes up. It still believes it holds the lock. It submits **the same payout again**.
-
-Run the scenario with fencing disabled and you get a duplicate submission to a non-idempotent payment
-rail and a ledger that no longer balances. Run it with fencing enabled — **changing nothing else, same
-lock service, same backend, same test** — and the stale worker is rejected at two independent
-enforcement points before it can touch anything.
+Worker **A** holds the lock and stalls past its lease. The lock service does exactly the right thing:
+it expires the lease and grants the lock to worker **B**, which completes the payout. Then **A** wakes
+up, still believing it holds the lock, and tries to finish its work.
 
 ```console
-$ ./gradlew :harness:runScenario --args='sigstop --fencing=off'
-  rail.submissions=2   ledger.balanced=false   ← money sent twice
-$ ./gradlew :harness:runScenario --args='sigstop --fencing=on'
-  rail.submissions=1   ledger.balanced=true    ← stale writer rejected twice
+# Illustrative transcript of the T-042 scenario, fencing on. Token values are examples.
+[A] acquire payout:acct-7                            -> GRANTED  fencingToken=41
+[A] SIGSTOP: paused past its lease; lock-server expires the lease on schedule
+[B] acquire payout:acct-7                            -> GRANTED  fencingToken=42
+[B] POST /v1/rail/submissions  X-Fencing-Token: 42   -> 200 ACKED   (rail_high_water: 42)
+paydb=> UPDATE account SET balance_minor = balance_minor - 2500, fence = 42
+paydb->  WHERE account_id = 'acct-7' AND currency = 'EUR' AND fence < 42 ...;
+UPDATE 1
+[A] SIGCONT: still believes it holds the lock, submits the same payout again
+[A] POST /v1/rail/submissions  X-Fencing-Token: 41   -> 409 FENCED_OUT
+    rejected: 41 is not greater than 42, and the rail is never called
+paydb=> UPDATE account SET ... fence = 41 WHERE account_id = 'acct-7' AND fence < 41 ...;
+UPDATE 0
+    rejected: the row already carries fence 42
+{"event":"fenced_out","resource":"account","resourceId":"acct-7",
+ "presentedToken":41,"highestToken":42,"ownerId":"A"}
 ```
 
-The lock service behaved **correctly in both runs.** It granted one lease at a time and expired the
-first one on schedule. That is precisely what makes this class of bug so easy to miss in code review,
-and it is the entire argument of this project.
+The lock service behaved **correctly in both halves of that transcript.** It granted one lease at a
+time and expired the first one on schedule. That is precisely what makes this class of bug so easy to
+miss in code review, and it is the entire argument of this project. Set `payment.fencing.enabled` and
+`rail.proxy.fencing.enabled` to `false` — the two kill switches of
+[C5 §5.2](docs/contracts/C5-config-build-and-naming.md#ct5-killswitches), and **nothing else changed**:
+same lock service, same backend, same test — and the stale worker's submission reaches a
+non-idempotent payment rail while the ledger stops balancing. Both default to on, are logged at `WARN`
+when off, and exist only so that the corruption can be demonstrated inside a named experiment.
 
-→ The experiment is task [`T-042`](tasks/T-042-fencing-demo.md). The mechanism is
+→ The experiment is task [`T-042`](tasks/T-042-fencing-demo.md); the transcript above illustrates it
+and is replaced by captured output when that task lands. The mechanism is
 [`docs/03-architecture.md`](docs/03-architecture.md#arch-flows), flow C.
 
-## Why this repository exists
+## Why a lock at all
 
 Search for "distributed lock tutorial" and you will find the same example every time: a bank balance,
 protected by a lock.
@@ -60,174 +58,239 @@ later.
 
 A distributed lock earns its place only when the critical section spans **a side effect no database
 transaction can roll back.** Here that side effect is a submission to a deliberately non-idempotent
-external payment rail — the one shape for which a distributed lock is genuinely the right answer.
+external payment rail — the one shape for which a distributed lock is genuinely the right answer
+([ADR-004](docs/adr/ADR-004-payout-executor-as-the-protected-operation.md)).
 
-Because the two protected resources have different capabilities, fencing is enforced **twice**, in two
-processes that the lock service does not control:
+## The two fence points
 
-| Resource | Enforcement mechanism | Contract |
-|---|---|---|
-| PostgreSQL row | conditional `UPDATE … WHERE fence < :token` | [C1](docs/contracts/C1-database-schemas.md#ct1-fenced) |
-| External rail (cannot be modified) | proxy holding a **persisted** highest-token-per-account high-water mark | [C3](docs/contracts/C3-http-surfaces.md#ct3-railproxy) |
+Because the two protected resources have different capabilities, fencing is enforced **twice**, and
+**both enforcement points live in processes the lock service does not control.**
+
+| Resource | Enforcement mechanism | Process | Contract |
+|---|---|---|---|
+| PostgreSQL row in `paydb` | conditional `UPDATE … WHERE fence < :token` | `payment-resource` | [C1](docs/contracts/C1-database-schemas.md#ct1-fenced) |
+| External rail (cannot be modified) | **persisted** highest-token-per-account high-water mark, checked before the rail is called | `rail-proxy` | [C3](docs/contracts/C3-http-surfaces.md#ct3-railproxy) |
 
 The high-water mark is persisted rather than in-memory, so that a proxy restart cannot forget it and
 re-admit a stale writer — see [ADR-007](docs/adr/ADR-007-rail-fencing-proxy-for-a-non-cas-resource.md).
 
-Neither enforcement point lives inside the lock service. That is the load-bearing design decision of
-the whole project: if the `fence < :token` check ran inside `lock-server`, the service would be
+Neither enforcement point lives inside `lock-server`. That is the load-bearing design decision of the
+whole project: if the `fence < :token` check ran inside the lock service, the service would be
 validating its own grants, and the bug being demonstrated — *the server was right, the holder was
-wrong, and the resource believed the holder* — could not occur at all.
+wrong, and the resource believed the holder* — could not occur at all
+([ADR-007](docs/adr/ADR-007-rail-fencing-proxy-for-a-non-cas-resource.md),
+[architecture §3.3](docs/03-architecture.md#arch-boundaries)).
 
-## Project status
-
-> **This repository currently contains specifications, not code.**
->
-> Approximately 100 documents: requirements, architecture, five authoritative contracts, fourteen
-> decision records, SRE artifacts, and **63 implementation task specifications** written to be picked
-> up independently by contributors. Nothing here compiles yet, because nothing here is code.
->
-> **That is the invitation.** The design work is finished and reviewable; the implementation is open.
-
-| | |
-|---|---|
-| Phase | Specification complete → implementation open |
-| Milestone in progress | **M0 — Foundations** ([roadmap](ROADMAP.md)) |
-| Tasks ready to claim | see the [task board](tasks/README.md) and [`good first issue`](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
-| Language / build | Java 25, Gradle 9.5 Kotlin DSL, Spring Boot 4.1 |
-| Backends | PostgreSQL 16 and etcd 3.6, both first-class |
-| License | [Apache-2.0](LICENSE) |
-
-## What gets built
-
-Nine modules, two interchangeable lock backends, two independent fencing enforcement points, and the
-operational apparatus to run the result on real infrastructure.
+## Architecture at a glance
 
 ```
-  +--- harness: scenarios | chaos (pause/kill/partition) | invariant checks | bench ---+
-      | drives                                                              asserts |
-      v                                                                             v
-  +--------------+  acquire/renew/release        +--------------------------------+
-  | payout-      |------------------------+      |          lock-server           |
-  | executor     |  heartbeat             |      | web -> core (SessionRegistry,  |
-  | (the worker) |<-- lock-client (SDK) --+----->| lease clock, token minting)    |
-  |  deadline, checkStillHeld, onLockLost |      | store.pg    |    store.etcd    |
-  +---+------+----------------------------+      +-----+--------------+-----------+
-      |      | (2) submit  X-Fencing-Token             |              |
-      |      v                                  +------v-----+  +-----v----------+
-      |  +----------------+  POST /submit       | dlock-pg-  |  | dlock-etcd     |
-      |  |   rail-proxy   |  (no token, no key) | lock       |  | 3-replica STS  |
-      |  | fence point (c)|------------------->  (lockdb,    |  | ModRevision =  |
-      |  | rail_high_water|<--ACK/DECLINE/t-out | REGIONAL)  |  | token          |
-      |  +--------+-------+     +-----------+   +------------+  +----------------+
-      |           |             | rail-stub |
-      |           | intent      | non-      |   lock-api: zero-dependency types,
-      | (1) claim | BEFORE      | idempotent|     shared by every box above
-      |  (3) post | forward     +-----------+   deploy: Terraform + K8s + compose
-      v           v                            build-logic: toolchain, Spotless
-  +----------------------------------------------------+   +--------------+
-  |  payment-resource | payout FSM | ledger | balance  |-->| dlock-pg-pay |
-  |  fence point (a): UPDATE .. WHERE fence < :token   |   | (paydb,ZONAL)|
-  +----------------------------------------------------+   +--------------+
+                      acquire / renew / release           +-----------------+
+   +------------------+   (lock-client SDK)               |   lock-server   |
+   | payout-executor  |---------------------------------> | lease clock,    |
+   | the worker; owns |   fencing token                   | token minting   |
+   | the critical     | <---------------------------------|                 |
+   | section          |                                   +--+-----------+--+
+   +--+------------+--+                                      |           |
+      |            |                                 +-------v--+   +----v-----+
+      |            | (2) X-Fencing-Token             | lockdb   |   |   etcd   |
+      |            v                                 | (pg)     |   | ModRev = |
+      |     +------+-------+  POST /submit           +----------+   | token    |
+      |     |  rail-proxy  |  (no token, no key)     +----------+   +----------+
+      |     | fence point  |-----------------------> | rail-stub|
+      |     | rail_high_   | <---- ACK / DECLINE --- | non-     |
+      |     | water        |                         | idempotent|
+      |     +--------------+                         +----------+
+      | (1) claim, (3) post   X-Fencing-Token
+      v
+   +-------------------------------------------+       +-------------+
+   | payment-resource: payout FSM, ledger,     |------>|    paydb    |
+   | balance; fence point: WHERE fence < :token|       |    (pg)     |
+   +-------------------------------------------+       +-------------+
 ```
 
-| Module | Responsibility |
-|---|---|
-| `lock-api` | The Java and wire contract. **Zero third-party dependencies**, enforced in CI |
-| `lock-server` | Lease authority; the only minter of fencing tokens; `store.pg` and `store.etcd` |
-| `lock-client` | SDK: conservative monotonic deadline, heartbeat loop, `checkStillHeld`, `onLockLost` |
-| `payment-resource` | Owns `paydb`; **fence point (a)** — the conditional `UPDATE` |
-| `payout-executor` | The worker that composes the critical section end to end |
-| `rail-proxy` | **Fence point (c)** — persisted high-water mark; records intent before forwarding |
-| `rail-stub` | A deliberately non-idempotent external rail with injectable latency and failures |
-| `harness` | Scenario runner, chaos injection, invariant checkers, benchmark driver |
-| `deploy` | Terraform, Kubernetes manifests, local `docker compose` path |
+## Both backends are first class
 
-Full inventory with dependency edges: [C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules).
+One SPI — `LockStore` ([C2 §2.5](docs/contracts/C2-java-api.md#ct2-spi)) — and two implementations
+that mint the fencing token differently:
 
-## Getting started
+| Backend | Token | Monotonic because |
+|---|---|---|
+| PostgreSQL | `nextval('fencing_token_seq')`, one global sequence | **procedure** — a restore must advance the sequence, or an operator recreates a token |
+| etcd | the lock key's `ModRevision`, **captured at grant time** from the winning CAS transaction | **construction** — the cluster revision never moves backwards |
 
-The Gradle build is in place; the services themselves are still being written. To find your way in:
+The same `payout-executor`, unchanged, runs against both, selected by one configuration key
+([ADR-002](docs/adr/ADR-002-fencing-token-source.md), [SC-02](docs/00-charter.md#ch-success)).
 
-| If you want to | Start at |
-|---|---|
-| **Contribute code** | [`CONTRIBUTING.md`](CONTRIBUTING.md), then claim a task from the [board](tasks/README.md) |
-| **Understand the argument** | This README, then [`docs/00-charter.md`](docs/00-charter.md) |
-| **Review the design** | [`docs/03-architecture.md`](docs/03-architecture.md) and the [decision records](docs/adr/) |
-| **Look up a name or a schema** | [`docs/04-contracts.md`](docs/04-contracts.md) — the index to every pinned identifier |
-| **Read the SRE half** | [`docs/06-observability-and-slo.md`](docs/06-observability-and-slo.md), [`docs/08-operations.md`](docs/08-operations.md) |
-| **Contribute as an AI agent** | [`AGENTS.md`](AGENTS.md) — required reading before generating anything |
+## Run it locally
 
-The local path needs JDK 25 and no cloud account:
+JDK 25 and Docker; no cloud account is needed for anything up to and including the fencing experiment.
 
 ```console
-git clone https://github.com/rednavis/distributed-lock-lab.git
-cd distributed-lock-lab
-./gradlew build          # builds all modules, runs the tests and the style check
-./gradlew spotlessApply  # formats Java and Gradle files, adds the license header
+./gradlew build                                   # all modules, tests and the style check
+./gradlew spotlessApply                           # format Java and Gradle files
+docker compose --project-directory deploy/compose up -d --wait   # PostgreSQL x2 + etcd
 ```
 
-`docker compose up` — the local stack with both backends, the rail and the services — arrives with
-[`T-005`](tasks/T-005-compose-stack.md).
+The local stack, its ports and its profiles are documented in
+[`deploy/compose/README.md`](deploy/compose/README.md).
 
-## The contracts are authoritative
+## Repository map
 
-Five documents pin every identifier this project is allowed to use — tables, columns, SQL statements,
-Java signatures, HTTP paths, error codes, headers, metric names, log event names, configuration keys,
-module names, cloud resource names.
+The layout is pinned by [C5 §5.5](docs/contracts/C5-config-build-and-naming.md#ct5-layout).
+
+```
+distributed-lock-lab/
+  settings.gradle.kts          # module registry + version catalog wiring; the only place modules are declared
+  build.gradle.kts             # applies convention plugins only - no versions, no per-module logic
+  gradle/libs.versions.toml    # the single source of every version
+  build-logic/                 # convention plugins: toolchain, format, test, Lombok policy
+  lock-api/                    # dev.lock.api - dependency-free contract
+  lock-server/                 # dev.lock.server.{core,store.pg,store.etcd,web} + lockdb migrations
+  lock-client/                 # dev.lock.client - SDK with the conservative deadline
+  payment-resource/            # dev.lock.payments.resource + paydb migrations
+  payout-executor/             # dev.lock.payments.executor - the critical section
+  rail-proxy/                  # dev.lock.rail.proxy - high-water fencing, attempt-before-forward
+  rail-stub/                   # dev.lock.rail.stub - the non-idempotent hazard
+  harness/                     # dev.lock.harness - scenarios, chaos, invariant checks
+  deploy/
+    terraform/                 # root module + env dirs; state in gs://dlock-tfstate
+    k8s/                       # manifests per workload, one dir per k8s SA
+    compose/                   # local no-cloud path
+    images/                    # the shared service Dockerfile
+  docs/                        # this document set; docs/contracts/ = C1..C5, docs/adr/ = decisions
+  tasks/                       # the 63 task specifications and the ledger
+  config/                      # shared static analysis and style configuration
+  scripts/                     # check-docs.sh and the repository bootstrap scripts
+  .github/workflows/           # build, infra, container, codeql, docs, pages, labels, dco
+```
+
+Migrations sit **inside the owning module** (`lock-server` owns lockdb, `payment-resource` owns
+paydb), because a shared migrations directory is how two databases silently acquire each other's
+tables.
+
+## Toolchain
+
+Every dependency version lives in [`gradle/libs.versions.toml`](gradle/libs.versions.toml) and nowhere
+else ([C5 §5.3](docs/contracts/C5-config-build-and-naming.md#ct5-catalog)).
+
+| Component | Version | Where it is pinned |
+|---|---|---|
+| Spring Boot (BOM and plugin) | 4.1.0 | catalog `spring-boot-bom` |
+| PostgreSQL JDBC driver | 42.7.5 | catalog `postgresql` |
+| Flyway | 11.8.0 | catalog `flyway-core` |
+| jetcd | 0.8.5 | catalog `jetcd-core` |
+| OpenTelemetry BOM | 1.49.0 | catalog `otel-bom` |
+| Lombok | 1.18.46 | catalog `lombok` |
+| JUnit BOM | 6.0.3 | catalog `junit-bom` |
+| AssertJ | 3.27.7 | catalog `assertj` |
+| Awaitility | 4.3.0 | catalog `awaitility` |
+| Testcontainers BOM | 1.21.0 | catalog `testcontainers-bom` |
+| Spotless plugin | 7.0.3 | catalog `spotless-plugin` |
+| google-java-format | 1.28.0 | catalog `google-java-format` |
+| PostgreSQL image | 16.15 | catalog `postgres-image` |
+| etcd image | 3.6.14 | catalog `etcd-image` |
+| Eclipse Temurin image | 25.0.4_7 | catalog `temurin-image` |
+| Java | 25 | Gradle toolchain in `build-logic/src/main/kotlin/dlock.java-base.gradle.kts` — the catalog has no toolchain row |
+| Gradle | 9.5.0 | `gradle/wrapper/gradle-wrapper.properties` |
+| Terraform | 1.15 | [C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules) and `.github/workflows/infra.yml` |
+
+## Non-goals
+
+Written down because *not writing them down* is how a teaching project becomes an unfinished platform.
+This table reproduces [charter §0.5](docs/00-charter.md#ch-nongoals); that file is the authority.
+
+| Out of scope | Why |
+|---|---|
+| Custom Raft implementation | The backends already provide consensus; writing Raft is a different project with a different lesson. etcd's `ModRevision` is a better token than one we would implement ([ADR-001](docs/adr/ADR-001-etcd-as-the-consensus-store.md)) |
+| Multi-region / global locking | Cross-region quorum latency is ruinous and it obscures the single lesson this project exists to teach. Single region, documented as a constraint |
+| Shared / exclusive (read-write) modes | Extra state in the state machine, no new insight about fencing |
+| Strict FIFO fairness | Barging locks with jittered backoff demonstrate the mechanics; a fairness queue adds a starvation-versus-throughput analysis that is a separate topic |
+| Multi-tenancy, namespaces, quotas | An operations concern, not a correctness one, and there is exactly one customer ([charter §0.3](docs/00-charter.md#ch-customer)) |
+| Admin UI | An operator CLI plus `psql`/`etcdctl` covers break-glass. A UI is the first thing to cut |
+| AuthN/AuthZ on the lock API | One in-cluster caller; adding it would double the surface without touching the lesson. **This alone disqualifies the project from production** |
+| Key-space sharding | One shard is arithmetically sufficient for the assumed load; sharding is designed on paper only ([architecture §3.8](docs/03-architecture.md#arch-scale)) |
+| Real payment rails, real money, real PII | Fictional domain; the rail is a stub |
+
+**Never cut, at any schedule pressure:** fencing tokens, conservative client-side expiry in the SDK,
+the correctness harness, the runbook. Without the first the project has no premise; without the rest
+it is a claim rather than a system.
+
+Several non-goals have a documented trigger condition that would make them correct. Proposing one is
+legitimate; expect to be pointed at the trigger first.
+
+## Status
+
+[![build](https://github.com/rednavis/distributed-lock-lab/actions/workflows/build.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/build.yml)
+[![docs](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/docs.yml)
+[![pages](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml/badge.svg)](https://github.com/rednavis/distributed-lock-lab/actions/workflows/pages.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+📖 **[Read the documentation site →](https://rednavis.github.io/distributed-lock-lab/)** — the full
+doc set with search and working cross-references.
 
 | | |
 |---|---|
-| [C1](docs/contracts/C1-database-schemas.md) | Database schemas and the exact SQL |
-| [C2](docs/contracts/C2-java-api.md) | Java API, the SPI, the SDK |
+| Milestone complete | **M0 — Foundations**: the Gradle build, nine modules, the version catalog, `lock-api`, the local compose stack, CI and this front matter (T-001…T-008) |
+| In progress | **M1 — PostgreSQL lock backend** ([roadmap](ROADMAP.md), [delivery plan](docs/10-delivery-plan.md#dp-milestones)) |
+| Not yet written | Every service's behaviour: M1 onward. The fencing experiment of the first section arrives with [`T-042`](tasks/T-042-fencing-demo.md) |
+| Measured numbers | None. No latency, throughput or success-rate figure appears anywhere in this repository until [`T-070`](tasks/T-070-benchmark-runner.md) measures one — **[unmeasured]** until then |
+| Tasks ready to claim | [`status:ready`](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22) · [`good first issue`](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [the board](tasks/README.md) · [what blocks what](docs/12-parallelization-map.md) |
+
+**This software must never be deployed in front of real money.** There is **no authentication and no
+authorisation on the lock API**: any caller that can reach `lock-server` can acquire, renew, release
+or force-revoke any lock. That single absence disqualifies it from production on its own, and it is a
+deliberate non-goal rather than an oversight. The rest of the security posture is in
+[`SECURITY.md`](SECURITY.md) and [architecture §3.9](docs/03-architecture.md#arch-security).
+
+The domain — a mid-size payment service provider, its payout queue, its external rail — is
+**fictional.** Every quantity in this repository is an explicitly labelled assumption, not measured
+production data.
+
+## Documentation
+
+**The contracts are authoritative.** Five documents pin every identifier this project is allowed to
+use — tables, columns, SQL statements, Java signatures, HTTP paths, error codes, headers, metric
+names, log event names, configuration keys, module names, cloud resource names. **If a task
+specification and a contract disagree, the contract wins** — open a
+[contract change issue](.github/ISSUE_TEMPLATE/contract-change.yml) rather than implementing either
+version. Reading order for a fresh session is C5 → C1 → C2 → C3 → C4.
+
+| Contract | Pins |
+|---|---|
+| [C1](docs/contracts/C1-database-schemas.md) | Database schemas and the exact SQL, including the fenced `UPDATE` |
+| [C2](docs/contracts/C2-java-api.md) | Java API, the `LockStore` SPI, the SDK, the zero-dependency rule |
 | [C3](docs/contracts/C3-http-surfaces.md) | HTTP surfaces, error envelope, timeouts |
 | [C4](docs/contracts/C4-observability.md) | Metrics, logs, traces, cardinality rules |
 | [C5](docs/contracts/C5-config-build-and-naming.md) | Configuration, build, and every naming convention |
 
-**If a task specification and a contract disagree, the contract wins** — open a
-[contract change issue](.github/ISSUE_TEMPLATE/contract-change.yml) rather than implementing either
-version. Nine modules and two lock backends compile against one vocabulary, and no single contributor
-sees more than a slice of it. A plausible synonym — `fencing_token` where the contract pins `fence` —
-compiles, passes its own module's tests, and fails at every integration point three milestones later.
+The doc set, indexed with reading paths in [`docs/README.md`](docs/README.md):
 
-## What this is not
+| | |
+|---|---|
+| [00 charter](docs/00-charter.md) | Problem, customer, success criteria, non-goals |
+| [01 requirements](docs/01-requirements.md) | Functional and non-functional requirements, invariants |
+| [02 domain model](docs/02-domain-model.md) | Payouts, ledger, accounts, the state machine |
+| [03 architecture](docs/03-architecture.md) | Components, boundaries, the four flows, failure modes |
+| [04 contracts](docs/04-contracts.md) | Index to the five contracts, precedence, change log |
+| [05 infrastructure](docs/05-infrastructure.md) | GCP topology and what it costs |
+| [06 observability and SLO](docs/06-observability-and-slo.md) | SLIs, SLOs, error-budget policy |
+| [07 correctness and testing](docs/07-correctness-and-testing.md) | Invariants, simulation, linearizability |
+| [08 operations](docs/08-operations.md) | Runbooks, break-glass, game day |
+| [09 risks](docs/09-risks.md) | Risk register |
+| [10 delivery plan](docs/10-delivery-plan.md) | Eight milestones and the critical path |
+| [11 glossary](docs/11-glossary.md) | Terms, used consistently across the set |
+| [12 parallelization map](docs/12-parallelization-map.md) | Which tasks can run at the same time |
+| [decision records](docs/adr/) | Fourteen ADRs plus the template, each with context and consequences |
 
-This is a **reference implementation and a teaching artifact.** It is not production-ready and must
-never be deployed in front of real money.
-
-Concretely missing, and deliberately so: no authentication or authorisation on the lock API, no
-multi-tenancy, no quotas, single region, no key-space sharding, no shared/exclusive lock modes, no
-strict FIFO fairness, no data-retention or PII story. It is not a Raft implementation — consensus
-comes from etcd, and [ADR-001](docs/adr/ADR-001-etcd-as-the-consensus-store.md) explains why writing
-our own would teach a different lesson than the one this project is for.
-
-The full non-goals table, each with its reason, is [`docs/00-charter.md`](docs/00-charter.md#ch-nongoals).
-
-The domain — a mid-size payment service provider, its payout queue, its external rail — is
-**fictional.** Every quantity in this repository is an explicitly labelled assumption, not measured
-production data. No benchmark number appears without the command, environment and date that produced
-it.
-
-## Start here
-
-Five tasks are unblocked **right now** — nothing needs to be merged first, and three of them need no
-Java at all:
-
-| Issue | Task | What you need |
-|---|---|---|
-| [#11](https://github.com/rednavis/distributed-lock-lab/issues/11) | `T-001` Monorepo skeleton and Gradle settings | JDK 25, Gradle. **Blocks every other Java task — highest priority in the repo** |
-| [#48](https://github.com/rednavis/distributed-lock-lab/issues/48) | `T-050` Terraform root and dev environment | Terraform CLI only. No cloud account, no billing |
-| [#49](https://github.com/rednavis/distributed-lock-lab/issues/49) | `T-051` Terraform module: network | Terraform CLI only |
-| [#50](https://github.com/rednavis/distributed-lock-lab/issues/50) | `T-052` Terraform module: two Cloud SQL instances | Terraform CLI only |
-| [#66](https://github.com/rednavis/distributed-lock-lab/issues/66) | `T-068` The runbook, one entry per alert | A text editor. Pure prose |
-
-Once `T-001` lands, [`T-023`](https://github.com/rednavis/distributed-lock-lab/issues/30) —
-`rail-stub`, the deliberately non-idempotent rail — is the best first Java contribution: self-contained,
-zero dependencies, and it is the hazard the whole experiment depends on.
-
-Browse everything: **[ready to start](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22)** ·
-**[good first issues](https://github.com/rednavis/distributed-lock-lab/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** ·
-[all 63 tasks](https://github.com/rednavis/distributed-lock-lab/issues) ·
-[the board](tasks/README.md) · [what blocks what](docs/12-parallelization-map.md)
+| If you want to | Start at |
+|---|---|
+| **Contribute code** | [`CONTRIBUTING.md`](CONTRIBUTING.md), then claim a task from the [board](tasks/README.md) |
+| **Understand the argument** | This page, then [`docs/00-charter.md`](docs/00-charter.md) |
+| **Review the design** | [`docs/03-architecture.md`](docs/03-architecture.md) and the [decision records](docs/adr/) |
+| **Look up a name or a schema** | [`docs/04-contracts.md`](docs/04-contracts.md) — the index to every pinned identifier |
+| **Read the SRE half** | [`docs/06-observability-and-slo.md`](docs/06-observability-and-slo.md), [`docs/08-operations.md`](docs/08-operations.md) |
+| **Contribute as an AI agent** | [`AGENTS.md`](AGENTS.md) — required reading before generating anything |
 
 ## Contributing
 
