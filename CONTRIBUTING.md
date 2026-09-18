@@ -25,6 +25,40 @@ The practical consequence for you: **most design questions already have written 
 proposing an alternative, check [`docs/adr/`](docs/adr/) — fourteen decisions are recorded there with
 their context and consequences, and reopening one costs more than it usually returns.
 
+### Reading order and precedence
+
+Read the contracts in the order **C5 → C1 → C2 → C3 → C4** ([`docs/04-contracts.md`
+§4.2](docs/04-contracts.md#c-routing)). C5 tells you which modules exist and what they are called; C1
+gives the state they operate on; C2 the in-process API; C3 the wire; C4 what every module must emit
+while doing it.
+
+When two sources disagree, the ladder is **contract → task specification → habit**:
+
+| Situation | What to do |
+|---|---|
+| A task specification names a column, path or metric the contract does not | **Stop and report**, quoting both. Do not implement either version |
+| A task specification omits a field the contract requires | Implement the contract; say so in the pull request |
+| The contract is silent on something your task needs | **Stop.** Silence is not permission to invent a name — request an amendment |
+| Two contracts disagree with each other | **Stop and report.** Contracts are peers; do not pick a winner |
+| The contract disagrees with how it is usually done elsewhere | The contract wins. "More idiomatic" is habit, and habit is the bottom of the ladder |
+
+**A mismatch is a documentation defect, not something to fix locally.** An implementer who quietly
+reconciles the difference produces a module that compiles alone and fails at every integration point
+([04 §4.4](docs/04-contracts.md#c-precedence)).
+
+### Changing a contract
+
+Contracts do change; they change in the open, and in this order:
+
+1. **Open a [contract change issue](.github/ISSUE_TEMPLATE/contract-change.yml)** stating what you
+   found, what you propose, and what breaks either way. Never a silent pull request.
+2. **Amend the contract document** once the change is agreed.
+3. **Add a row to the change log**, [`docs/04-contracts.md` §4.5](docs/04-contracts.md#c-changelog),
+   naming the date, the contracts touched, the change, and the task specifications to revisit.
+4. **Revisit those task specifications.** A spec written against the old spelling is now wrong, not
+   merely out of date.
+5. **Then implement.** Code lands after the contract it obeys, never before.
+
 ## 2. Ways to contribute
 
 | Contribution | Where it starts |
@@ -81,15 +115,18 @@ to someone.
 
 ## 5. Setting up
 
-Until milestone M0 lands there is no build to run — creating it *is* M0. From M0 onward:
+M0 has landed, so the build runs from a clean clone:
 
 ```console
 git clone https://github.com/rednavis/distributed-lock-lab.git
 cd distributed-lock-lab
-./gradlew build            # all modules, full test suite
-./gradlew spotlessApply    # format before committing
-docker compose up          # local stack, no cloud account required
+./gradlew build                                   # all modules, full test suite, style check
+./gradlew spotlessApply                           # format before committing
+./gradlew spotlessCheck                           # what CI runs; fails instead of rewriting
+docker compose --project-directory deploy/compose up -d --wait   # local stack, no cloud account
 ```
+
+The compose stack lives in [`deploy/compose/`](deploy/compose/README.md), not in the repository root.
 
 **Requirements:** JDK 25 (the Gradle toolchain will fetch one if your default differs), Docker for
 Testcontainers, and roughly 8 GB of RAM for the full local stack. No Google Cloud account is needed
@@ -154,6 +191,17 @@ the terminal output is.
   the PR is welcome and will not annoy anyone.
 - Review comments are about the code, never the author. Reviewers: see the
   [Code of Conduct](CODE_OF_CONDUCT.md), which binds you as much as it binds contributors.
+
+#### What a reviewer checks
+
+Four things are checked on every pull request, because each is cheap to miss and expensive to undo:
+
+| Checkpoint | What a failure looks like |
+|---|---|
+| **Two databases, two instances** | A payout, ledger or `rail_high_water` table in `lock-server`'s migrations, or a lock table in `payment-resource`'s. Migrations live inside the module that owns the database ([C5 §5.5](docs/contracts/C5-config-build-and-naming.md#ct5-layout), [ADR-003](docs/adr/ADR-003-two-databases-two-instances.md)); one instance for both would fail the lock and the resource together and destroy the failover experiment |
+| **Lombok stays limited** | Any annotation beyond `@RequiredArgsConstructor` and `@Slf4j` — `@Data`, `@Builder`, `@SneakyThrows` ([§11](#11-decisions-that-are-settled)) |
+| **No version outside the catalog** | A literal version in a `build.gradle.kts`, a Dockerfile tag, or a workflow, instead of [`gradle/libs.versions.toml`](gradle/libs.versions.toml) |
+| **Pinned names, not synonyms** | The fencing column is `fence`, never `fencing_token`; the SDK check is `checkStillHeld()`. Verify against the contract, do not recall it |
 
 ## 7. Definition of done
 
