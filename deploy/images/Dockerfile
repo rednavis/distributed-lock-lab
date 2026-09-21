@@ -7,7 +7,7 @@
 # The base tags repeat temurin-image from gradle/libs.versions.toml (C5 #ct5-catalog); move them together.
 # The build context is filtered by Dockerfile.dockerignore, next to this file.
 
-FROM eclipse-temurin:25.0.4_7-jdk AS build
+FROM eclipse-temurin:26.0.1_8-jdk AS build
 ARG MODULE
 WORKDIR /workspace
 # The whole filtered tree rather than a list: Gradle 9 configures every project that settings.gradle.kts
@@ -27,7 +27,7 @@ RUN jar="$(find "${MODULE}/build/libs" -maxdepth 1 -name '*.jar' ! -name '*-plai
     cp "${jar}" application.jar; \
     java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
-FROM eclipse-temurin:25.0.4_7-jre
+FROM eclipse-temurin:26.0.1_8-jre
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /application
 # Dependencies first, so a code-only change rebuilds only the last layer.
