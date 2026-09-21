@@ -30,7 +30,7 @@ x-paydb-password: &paydb-password ${PAYMENTS_DATASOURCE_PASSWORD:-lab-only-paydb
 
 services:
   lockdb:
-    image: postgres:16.15
+    image: postgres:18.4
     container_name: dlock-lockdb
     environment:
       POSTGRES_DB: lockdb
@@ -47,7 +47,7 @@ services:
       <<: *health-timing
 
   paydb:
-    image: postgres:16.15
+    image: postgres:18.4
     container_name: dlock-paydb
     environment:
       POSTGRES_DB: paydb
