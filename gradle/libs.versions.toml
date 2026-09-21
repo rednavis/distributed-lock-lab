@@ -6,7 +6,7 @@
 # - "via BOM" libraries carry no version; the imported platform supplies it.
 
 [versions]
-spring-boot-bom = "4.1.0"
+spring-boot-bom = "4.1.1"
 postgresql = "42.7.5"
 flyway-core = "11.8.0"
 jetcd-core = "0.8.5"
