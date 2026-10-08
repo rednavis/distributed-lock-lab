@@ -12,9 +12,11 @@
 **T-016a**: conventions, header binding, validation, the error envelope and the exception→code mapper,
 plus L1–L3 (sessions). **T-016b**: L4–L8 (locks). Do a in order in one session each; b assumes a.
 
-**Preconditions** — T-013 (core `LockService` wired over `PostgresLockStore`), T-014 (expiry signal),
-T-015 (`revoke` with audit trail, so L8 has something to call). You inherit a fully working in-process
-lock service with **no web layer at all**; `lock-server/web` is an empty package.
+**Preconditions** — part A: T-012 (`PgExceptionTranslator`), T-013 (pg `SessionRegistry`), T-018 (core
+`LockService` wired over `PostgresLockStore`,
+[#96](https://github.com/rednavis/distributed-lock-lab/issues/96)). Part B additionally: T-014 (expiry
+signal), T-015 (`revoke` with audit trail, so L8 has something to call). You inherit a fully working
+in-process lock service with **no web layer at all**; `lock-server/web` is an empty package.
 
 **Goal** — Expose exactly the eight endpoints L1–L8 of the C3 lock surface, with the contract error
 envelope and a retry-safety verdict per error code that is derived from the contract, not guessed.
@@ -126,6 +128,7 @@ from the outcome, never from the HTTP status. No path or key in any tag.
 - `curl -i -XDELETE -H 'X-Owner-Id: w1' -H 'X-Fencing-Token: abc' localhost:8080/v1/locks/payout:acct-1` → 400, `code=INVALID_TOKEN`, `retrySafe=false`.
 - `curl -s localhost:8080/v1/locks/payout:acct-1 | jq .held` → `true`, with no headers sent.
 - `curl -s localhost:8080/actuator/prometheus | grep lock_acquire_seconds_count` → series for `outcome="granted"` and `outcome="contended"`.
+- Part B, moved here from T-014: acquire `payout:acct-2` with `ttlMillis=1000` and stop heartbeating. Within ~2 s the log shows one `lease_expired` WARN, and `curl -s localhost:8080/actuator/prometheus | grep lock_lease_expired_total` shows the series with `backend="pg"` incremented by one.
 
 ## 7. Out of scope
 
@@ -142,7 +145,6 @@ harness-level coverage is M4).
   stored fence and looks like a benign no-op.
 - **`FENCED_OUT` is never retry-safe and is incident-grade** (NFR-06); do not emit `retryAfterMillis` with it.
 - Deriving `outcome` tags from HTTP status conflates `contended` with `error` and corrupts the M7 benchmark.
-- Do **not** run `git` (ADR-011).
 
 ## 9. On completion
 

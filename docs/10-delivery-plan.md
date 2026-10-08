@@ -57,7 +57,7 @@ contributor-facing version of this table, with entry points and parallelism note
 | **M6** | Observability + SRE | Metrics, logs, traces, SLIs/SLOs, error-budget policy, alerts, runbooks, game day | T-060…069 | Managed Prometheus scrapes `http-metrics` and every metric in [C4 `#ct4-metrics`](contracts/C4-observability.md#ct4-metrics) is queryable; the cardinality check fails the build on an added key tag (SC-11); every alert links a runbook section (NFR-10/11); the game-day table records detection latency per alert (SC-09) |
 | **M7** | Benchmark, comparison, publication | pg vs etcd measured; failover experiment; the write-up | T-070…075 | Results table with p50/p99 acquire per backend on one harness (NFR-03); regional primary-failover dip measured and logged with zero safety events (SC-08); one month of SLI data reported against the policy (SC-10); a reader can trace a token end to end (SC-12) |
 
-Unassigned ids — T-009, T-018/019, T-028/029, T-035…039, T-048/049 — are **split capacity, not spare
+Unassigned ids — T-009, T-019, T-028/029, T-035…039, T-048/049 — are **split capacity, not spare
 scope.** See [10.7](#dp-overrun).
 
 ## 10.3 Dependency graph {#dp-graph}
@@ -172,7 +172,7 @@ do not make it a failed day.
 |---|---|
 | Nearly done, scope was slightly under-estimated | Finish it. Note the under-estimate in the pull request so the specification can be corrected |
 | Still discovering scope | **Stop adding code.** Bring the branch to a buildable state — `./gradlew build` green, no half-written file left behind |
-| Then | Keep the original id for the finished part. Take the **next reserved id in that milestone's gap** (T-009, T-018/019, T-028/029, T-035…039, T-048/049) for the remainder, and write its specification *now*, while the context is in your head |
+| Then | Keep the original id for the finished part. Take the **next reserved id in that milestone's gap** (T-009, T-019, T-028/029, T-035…039, T-048/049) for the remainder, and write its specification *now*, while the context is in your head |
 | Then | Mark the original ledger row `split`, pointing at the new id. Open an issue for the remainder. Land what you have |
 | Gap exhausted | The milestone was mis-scoped. That is a maintainer problem — open an issue rather than appending `T-017b`, `T-017c` |
 

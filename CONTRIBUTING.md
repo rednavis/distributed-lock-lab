@@ -241,8 +241,8 @@ Split it. Do not sprawl.
 1. Bring your branch to a **buildable** state. A broken build is the worst possible handoff.
 2. Open a follow-up issue for the remainder, written clearly enough that somebody else could pick it up
    without reconstructing your reasoning.
-3. Take the **next reserved id in that milestone's gap** for the remainder — `T-009`, `T-018`, `T-019`,
-   `T-028`, `T-029`, `T-035`…`T-039`, `T-048`, `T-049` exist precisely for this. Do not append
+3. Take the **next reserved id in that milestone's gap** for the remainder — `T-009`, `T-019`, `T-028`,
+   `T-029`, `T-035`…`T-039`, `T-048`, `T-049` exist precisely for this. Do not append
    `T-017b`, `T-017c`.
 4. Update the ledger row to `split`, pointing at the new id.
 5. Land what you have.

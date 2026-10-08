@@ -11,10 +11,12 @@
 **Milestone** M1 — Postgres lock backend · **Estimate** 30 minutes (at the limit; if the token-floor
 mechanism turns out to need a schema change, stop after §4 step 1 and hand the migration to a follow-up)
 
-**Preconditions** — T-010…T-013 (lockdb migrations incl. `lock_revocation`, `PostgresLockStore` with insert /
-extend / delete-if-owner / read, core `LockService`), T-014 (sweeper, `LockMetrics`, structured-logging
-helper in place). You inherit a store that can grant and release but has no way for a human to take a
-lock away from a wedged holder.
+**Preconditions** — T-010…T-012 (lockdb migrations incl. `lock_revocation`, `PostgresLockStore` with
+insert / extend / delete-if-owner / read), T-014 (sweeper, `LockMetrics`, structured-logging helper in
+place). `DefaultLockService` is created by T-018
+([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)), which is not in this task's Blocked
+by; for the landing order of the two, see #96. You inherit a store that can grant and release but has no
+way for a human to take a lock away from a wedged holder.
 
 **Goal** — Implement `LockStore.revoke` and the `LockService` force-revoke path so a revocation
 atomically deletes the grant, **advances the token floor**, and appends one `lock_revocation` row
@@ -117,7 +119,6 @@ and the etcd revoke implementation (T-030s).
 - **Reusing or lowering a token silently disables fencing for that key — INV-04** (`#ct2-spi`).
 - Two statements outside one transaction produce an eviction with no audit row; the audit trail is the
   deliverable, not a side effect.
-- Do **not** run `git` (ADR-011).
 
 ## 9. On completion
 

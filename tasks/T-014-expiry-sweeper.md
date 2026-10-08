@@ -11,11 +11,14 @@
 **Milestone** M1 — Postgres lock backend · **Estimate** 25 minutes (fits one session)
 
 **Preconditions** — T-001…T-008 (M0 foundations: `build-logic`, version catalog, module skeletons,
-`lock-api` types on disk), T-010…T-013 (lockdb Flyway tree, `PostgresLockStore` with
-`tryInsert`/`extend`/`deleteIfOwner`/`read`, pg `SessionRegistry`, the core `LockService` wired behind
-`lock.backend=pg`). You inherit a lock-server that can grant, renew and release against a real
-`lock_entry`, and whose expired rows are simply *ignored* by the acquire statement — nobody deletes
-them and nobody notices. Confirm the exact inherited state in `tasks/README.md`.
+`lock-api` types on disk), T-010…T-012 (lockdb Flyway tree, `PostgresLockStore` with
+`tryInsert`/`extend`/`deleteIfOwner`/`read`, `PgExceptionTranslator`). Neither T-013 (pg
+`SessionRegistry`) nor T-018 (the core `LockService`,
+[#96](https://github.com/rednavis/distributed-lock-lab/issues/96)) is needed: the sweeper drives the
+store directly, and this task runs in parallel with T-013. You inherit a lock-server that can grant,
+renew and release against a real `lock_entry`, and whose expired rows are simply *ignored* by the acquire
+statement — nobody deletes them and nobody notices. Confirm the exact inherited state in
+`tasks/README.md`.
 
 **Goal** — Implement the scheduled reaper behind `LockStore.reapExpired(Instant)` so every expired
 lease produces one WARN `lease_expired` log event and one `lock.lease.expired` increment.
@@ -90,12 +93,19 @@ C5 §5.1 pins no sweep-interval key; inventing one is a contract change, so do n
 ## 6. Verification
 
 - `./gradlew :lock-server:spotlessCheck :lock-server:test` — green.
-- `./gradlew :lock-server:bootRun` against the local lockdb, then acquire a lock with `ttlMillis=1000`
-  via `curl -XPOST .../v1/locks/payout:acct-1/acquire` and stop heartbeating. Within ~2 s the log shows
-  one `lease_expired` WARN with `overdueMillis` under 1500.
-- `curl -s localhost:8080/actuator/prometheus | grep lock_lease_expired_total` → value `1.0`, tag `backend="pg"`.
-- `psql "$LOCKDB_URL" -c 'select count(*) from lock_entry'` → `0`.
-- Repeat the acquire twice more without heartbeat; the counter reads `3.0` and three distinct WARN lines exist.
+At this point `lock-server` has no HTTP surface and no Boot application class; both arrive in T-016.
+Drive the sweeper directly instead:
+
+- In `ExpirySweeperTest` (stubbed `LockStore`, a `SimpleMeterRegistry`): one reaped lease produces one
+  `lease_expired` WARN and `lock.lease.expired` = `1.0` with tag `backend=pg`; two more reaped leases
+  bring the counter to `3.0` with three distinct WARN lines.
+- Against the real lockdb, from a temporary runner that is not committed: insert a `lock_session` row
+  with `psql` first (`lock_entry.session_id` is a foreign key, and T-013's registry may not have landed),
+  grant `payout:acct-1` through `PostgresLockStore` with a 1000 ms TTL, let it lapse and run one sweep.
+  The log shows one `lease_expired` WARN with `overdueMillis` under 1500, and
+  `psql "$LOCKDB_URL" -c 'select count(*) from lock_entry'` → `0`.
+- The scrape of `lock_lease_expired_total` through `/actuator/prometheus` is verified end to end in
+  T-016 part B, the first task that can create an expiring lease over HTTP.
 
 ## 7. Out of scope
 
@@ -113,7 +123,6 @@ log-based metric wiring in Cloud Logging (T-060s), and any dashboard.
 - **Summary logging breaks the log-based metric** (`#ct4-lbm`).
 - **Tag temptation**: adding `key` to `lock.lease.expired` is the cardinality explosion forbidden by
   `#ct4-cardinality` and hard-coded closed by `#ct5-fixed`.
-- Do **not** run `git` — the repo is deliberately not a git repository (ADR-011).
 
 ## 9. On completion
 

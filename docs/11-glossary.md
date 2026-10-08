@@ -198,7 +198,7 @@ what, why, blast radius, and contract impact. An unrecorded deviation is indisti
 for everyone who comes after.
 
 **Split** — dividing an over-large task, with the remainder taking the next **reserved id** in that
-milestone's gap (`T-009`, `T-018`, …). Never `T-017b`.
+milestone's gap (`T-009`, `T-019`, …). Never `T-017b`.
 
 **ASSUMPTION** — an invented figure. Every number in this repository is one unless it names the command
 that measured it.

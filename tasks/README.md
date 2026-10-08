@@ -73,14 +73,14 @@ priority in the project.
 
 | Task | Title | Blocked by | Status | Notes |
 |---|---|---|---|---|
-| [T-010](T-010-lockdb-migration.md) | Flyway migration: lockdb schema | T-004 | Not started | **Fan-out: unblocks T-011, T-013, T-014, T-015.** `good first issue` |
+| [T-010](T-010-lockdb-migration.md) | Flyway migration: lockdb schema | T-004 | Not started | Unblocks T-011; M1 is ordered up to T-012. `good first issue` |
 | [T-011](T-011-pg-tryacquire.md) | `PostgresLockStore.tryAcquire` | T-010 | Not started | `critical-path`, `safety` |
 | [T-012](T-012-pg-renew-release.md) | `PostgresLockStore` renew, release, inspect | T-011 | Not started | `critical-path` |
-| [T-013](T-013-session-registry.md) | SessionRegistry and heartbeat persistence | T-010 | Not started | ∥ with T-011 |
-| [T-014](T-014-expiry-sweeper.md) | ExpirySweeper and the expiry signal | T-010 | Not started | ∥ with T-011 |
-| [T-015](T-015-force-revoke.md) | forceRevoke and the revocation audit trail | T-010 | Not started | ∥ with T-011 |
-| [T-016a](T-016-lock-server-rest.md) | lock-server HTTP: conventions, error envelope, L1–L3 | T-012, T-013 | Not started | Part A. Header binding, validation, exception→code mapper |
-| [T-016b](T-016-lock-server-rest.md) | lock-server HTTP: L4–L8 (acquire, renew, release, revoke, info) | T-016a | Not started | **Mandatory, not optional.** T-017, T-025 and T-041 all need L4–L8 |
+| [T-013](T-013-session-registry.md) | SessionRegistry and heartbeat persistence | T-012 | Not started | ∥ with T-014 (disjoint files). Heartbeat faults route through T-012's `PgExceptionTranslator`. Then T-018 |
+| [T-014](T-014-expiry-sweeper.md) | ExpirySweeper and the expiry signal | T-012 | Not started | ∥ with T-013. `reapExpired` lands in T-011's `PostgresLockStore`, translation in T-012 |
+| [T-015](T-015-force-revoke.md) | forceRevoke and the revocation audit trail | T-014 | Not started | Needs T-014's `LockMetrics` and structured-logging helper |
+| [T-016a](T-016-lock-server-rest.md) | lock-server HTTP: conventions, error envelope, L1–L3 | T-012, T-013, T-018 | Not started | Part A ([#25](https://github.com/rednavis/distributed-lock-lab/issues/25)). Header binding, validation, exception→code mapper. T-018 is the core `LockService` ([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)); its ledger row arrives with its specification |
+| [T-016b](T-016-lock-server-rest.md) | lock-server HTTP: L4–L8 (acquire, renew, release, read, revoke) | T-016a, T-015 | Not started | Part B ([#97](https://github.com/rednavis/distributed-lock-lab/issues/97)). **Mandatory, not optional.** T-017, T-025 and T-041 all need L4–L8. L8 needs T-015's `RevocationRecord` |
 | [T-017](T-017-pg-testcontainers.md) | Testcontainers matrix for the Postgres backend | T-016b | Not started | **Checkpoint: the backend becomes provable locally** |
 
 ### M2 — Protected resource and executor
@@ -176,7 +176,7 @@ The **offline half** — runbooks, alert definitions, SLO objects — needs no c
 
 ## 4. Reserved ids
 
-`T-009` · `T-018` · `T-019` · `T-028` · `T-029` · `T-035`…`T-039` · `T-048` · `T-049`
+`T-009` · `T-019` · `T-028` · `T-029` · `T-035`…`T-039` · `T-048` · `T-049`
 
 **Split capacity, not spare scope.** When a task exceeds its specification, the remainder takes the next
 reserved id in that milestone's gap. Never `T-017b`. They exist so that one split does not require
