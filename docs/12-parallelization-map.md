@@ -26,13 +26,14 @@ whose preconditions *are* merged can be claimed immediately, regardless of what 
 
 ## 12.2 Available right now {#pm-now}
 
-With **zero tasks merged**, these lanes are genuinely open. They are not busywork offered to
+M0 is merged (`T-001`…`T-008`), and these lanes are genuinely open. They are not busywork offered to
 newcomers — the runbook is on the never-cut list ([00 §0.5](00-charter.md#ch-nongoals)), and every hour
 of Terraform authored offline is an hour not spent paying for a cluster.
 
 | Task | Lane | Needs | Why it is unblocked |
 |---|---|---|---|
-| [`T-001`](../tasks/T-001-monorepo-skeleton.md) ◆ | Build | JDK 25, Gradle | **Blocks everything Java. Highest priority in the repository** |
+| [`T-010`](../tasks/T-010-lockdb-migration.md) | Lock core | JDK 25, Docker | **Head of M1 and of the critical path** ([10.4](10-delivery-plan.md#dp-critical)). Its specification needs M0 only |
+| [`T-023`](../tasks/T-023-rail-stub.md) | Payments and rail | JDK 25 | Its specification needs M0 only, and the module must not depend on M1 or M2 |
 | [`T-050`](../tasks/T-050-tf-root.md) | Terraform | Terraform CLI only | HCL is authored and `validate`d offline; nothing applies |
 | [`T-051`](../tasks/T-051-tf-network.md) | Terraform | Terraform CLI only | Same — write and validate, no apply |
 | [`T-052`](../tasks/T-052-tf-cloudsql.md) | Terraform | Terraform CLI only | Same |
@@ -40,9 +41,9 @@ of Terraform authored offline is an hour not spent paying for a cluster.
 | [`T-058`](../tasks/T-058-console-walkthrough.md) | Docs | A text editor | The click path is documented from doc 05's inventory |
 
 > [!NOTE]
-> **`T-001` is the bottleneck and should be reviewed the day it is opened.** Until the Gradle build
-> exists, no Java task in any milestone can start. If you are a maintainer with limited review time,
-> spend it here.
+> **`T-010` is the bottleneck and should be reviewed the day it is opened.** M1 is a chain up to
+> `T-012` — `T-011`…`T-015` edit the same store files — and every task in M1, `T-025`, M4 and the
+> parity suite waits on it. If you are a maintainer with limited review time, spend it here.
 
 ## 12.3 The lanes {#pm-lanes}
 
@@ -75,17 +76,22 @@ exist before the version catalog, and the catalog before the convention plugins 
 ### Lane B — Lock core (M1, then M3)
 
 ```
-T-010 ◆ ──┬──→ T-011 ──→ T-012 ──┐
-          ├──→ T-013            ├──→ T-016a ──→ T-016b ──→ T-017
-          ├──→ T-014     ∥      │
-          └──→ T-015            ┘
+T-010 ──→ T-011 ──→ T-012 ──┬──→ T-013 ──→ T-018 ──┬──→ T-016a ──┐
+                            │     ∥                │             ├──→ T-016b ──→ T-017
+                            └──→ T-014 ────────────┴──→ T-015 ───┘
 
 M3 (needs T-016b for the parity suite, but T-030..T-033 need only T-004):
 T-030 ──→ T-031 ──→ T-032 ──→ T-033 ──→ T-034a ──→ T-034b
 ```
 
-`T-010` (the schema migration) is the fan-out point: `T-011`, `T-013`, `T-014` and `T-015` all become
-available at once, and four people can work them simultaneously.
+**M1 is a chain up to `T-012`, not a fan-out.** `T-011`, `T-012`, `T-014` and `T-015` each edit
+`PostgresLockStore.java`, and `T-011`…`T-013` share `LockSql.java`, so the store tasks cannot run side
+by side. After `T-012`, `T-013` and `T-014` run in parallel — they touch disjoint files, which is what
+makes them the **∥** pair. `T-018`, the core `LockService`
+([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)), follows `T-013` and creates
+`DefaultLockService` with `forceRevoke` left as a seam; `T-015` waits on both `T-014` and `T-018` and
+fills that seam. `T-016a` injects the `LockService`, so it also follows `T-018`, and runs in parallel
+with `T-015`. `T-016b` joins the two: L8 returns `T-015`'s `RevocationRecord`.
 
 **`T-030`…`T-033` only need `lock-api` from M0.** The etcd backend does **not** depend on the
 PostgreSQL backend being finished — only the *parity suite* (`T-034`) does. If two contributors arrive
@@ -171,7 +177,6 @@ Merging these unblocks the most work. Maintainers: review these first.
 | [`T-001`](../tasks/T-001-monorepo-skeleton.md) | **Every Java task in the repository** | Build |
 | [`T-003`](../tasks/T-003-convention-plugins.md) | `T-004`…`T-008` (5 tasks) | Build |
 | [`T-004`](../tasks/T-004-lock-api-types.md) | All of M1, M2 and M3 — six modules depend on `lock-api` | Build |
-| [`T-010`](../tasks/T-010-lockdb-migration.md) | `T-011`, `T-013`, `T-014`, `T-015` (4 tasks) | Lock core |
 | [`T-020`](../tasks/T-020-paydb-migration.md) | `T-021`, and with `T-023` also `T-024` | Payments |
 | [`T-041`](../tasks/T-041-sdk-acquire.md) | `T-042`…`T-047` (6 tasks, including the central claim) | SDK |
 | [`T-016b`](../tasks/T-016-lock-server-rest.md) | `T-017`, `T-025`, `T-041`, `T-034` | Lock core |
@@ -183,7 +188,7 @@ Merging these unblocks the most work. Maintainers: review these first.
 | **1** | Follow the critical path: M0 → M1 → M2 → `T-042`. Ignore the lanes entirely |
 | **2** | One on Lane B (lock core), one on Lane C (payments and rail) after M0. They converge at `T-027` |
 | **3** | Add Lane E: one person authoring all of M5's Terraform offline, in parallel, from day one |
-| **4–5** | Split Lane B by backend — one on PostgreSQL (`T-011`…`T-017`), one on etcd (`T-030`…`T-033`). They converge at `T-034` |
+| **4–5** | Split Lane B by backend — one on PostgreSQL (`T-010`…`T-018`, a chain that splits into two branches after `T-012`), one on etcd (`T-030`…`T-033`). They converge at `T-034` |
 | **6+** | Add Lane F's offline half (runbooks, alert definitions) and the M7 write-ups. Beyond this, review capacity becomes the binding constraint, not contributor capacity |
 
 **Review capacity is the real ceiling.** With one maintainer and a five-working-day review commitment

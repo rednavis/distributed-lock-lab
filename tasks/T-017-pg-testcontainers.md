@@ -12,9 +12,10 @@
 fixture and Flyway wiring take longer than 10 minutes, land the fixture plus scenarios 1–3 and note
 4–6 as the immediate follow-up in the ledger)
 
-**Preconditions** — T-010…T-013 (lockdb migrations, `PostgresLockStore`, pg `SessionRegistry`, core
-`LockService`), T-014 (`reapExpired`), T-015 (`revoke`), T-016 (web layer; not exercised here). You
-inherit a Postgres backend whose behaviour has only been asserted against mocks and hand-run `psql`.
+**Preconditions** — T-010…T-013 (lockdb migrations, `PostgresLockStore`, pg `SessionRegistry`), T-018
+(core `LockService`, [#96](https://github.com/rednavis/distributed-lock-lab/issues/96)), T-014
+(`reapExpired`), T-015 (`revoke`), T-016 (web layer; not exercised here). You inherit a Postgres backend
+whose behaviour has only been asserted against mocks and hand-run `psql`.
 
 **Goal** — Prove the six load-bearing store behaviours against a real PostgreSQL 16 container, so M1 can
 be declared done on evidence rather than on inspection.
@@ -122,7 +123,6 @@ and performance measurement (M7).
   bug in home-grown lock clients; scenario 6 exists specifically to pin the distinction.
 - A test that asserts a *specific* token value rather than ordering will break the moment the global
   sequence is shared — assert `>`, never `==` on tokens across grants.
-- Do **not** run `git` (ADR-011).
 
 ## 9. On completion
 

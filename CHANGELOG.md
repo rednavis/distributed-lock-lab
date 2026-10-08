@@ -5,8 +5,8 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project will use
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from its first release.
 
-**There is no release yet.** The project is in its specification-complete, pre-implementation phase —
-see [`ROADMAP.md`](ROADMAP.md). The first tagged release will be `v0.1.0`, cut when milestone **M4**
+**There is no release yet.** Milestone M0 (foundations) is complete and M1 is in progress — see
+[`ROADMAP.md`](ROADMAP.md). The first tagged release will be `v0.1.0`, cut when milestone **M4**
 closes and the fencing experiment ([`T-042`](tasks/T-042-fencing-demo.md)) is reproducible from a clean
 clone. That is the first point at which there is anything worth versioning.
 
@@ -16,6 +16,23 @@ clone. That is the first point at which there is anything worth versioning.
 
 ### Added
 
+- **M0 — Foundations** ([`T-001`](tasks/T-001-monorepo-skeleton.md)…[`T-008`](tasks/T-008-repo-front-matter.md),
+  closed 2026-09-18). Every deviation is recorded in the [ledger](tasks/README.md#m0--foundations).
+  - A Gradle 9.5 Kotlin DSL monorepo: the nine modules of
+    [C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules) plus the `build-logic` included
+    build.
+  - The version catalog, [`gradle/libs.versions.toml`](gradle/libs.versions.toml), including the
+    PostgreSQL, etcd and Temurin image versions. The Java, Terraform and tflint versions are still
+    literals outside it; the ledger records each one.
+  - Convention plugins with Spotless and google-java-format, and a build-time check that Lombok stays
+    limited to `@RequiredArgsConstructor` and `@Slf4j`.
+  - `lock-api`: the contract types, with zero third-party dependencies and a test that pins their
+    signatures.
+  - A local compose stack (two PostgreSQL servers, `lockdb` and `paydb`, plus etcd) and one shared
+    multi-stage Dockerfile for the services.
+  - CI: the build workflow (format, then build, the simulation suite and the `lock-api` zero-dependency
+    check), the infra and CodeQL workflows reshaped to run, a new container workflow, and Dependabot.
+  - A README that leads with an illustration of the fencing demonstration.
 - **Specification tree.** 13 design documents, five authoritative contracts (C1–C5), fourteen
   architecture decision records, and 63 implementation task specifications.
 - **Open-source foundation.** Apache-2.0 licence with DCO sign-off
@@ -25,8 +42,8 @@ clone. That is the first point at which there is anything worth versioning.
 - **Contributor workflow.** Issue and pull-request templates, `CODEOWNERS` review routing, a label
   taxonomy, and GitHub milestone definitions mirroring the eight roadmap milestones.
 - **CI.** Documentation link checking, repository hygiene and credential scanning, ledger consistency,
-  DCO enforcement, and label synchronisation — all running today. The Gradle build, CodeQL and
-  Terraform workflows are authored and self-skip until the code they check exists.
+  DCO enforcement, and label synchronisation. The Gradle build, CodeQL and Terraform workflows authored
+  here were reshaped in M0 and now run, Terraform as `infra.yml` (below).
 - [`docs/12-parallelization-map.md`](docs/12-parallelization-map.md) — the dependency graph showing
   which tasks can be worked simultaneously.
 - [`docs/11-glossary.md`](docs/11-glossary.md) — every term of art used in the repository.
