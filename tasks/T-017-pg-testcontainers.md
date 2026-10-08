@@ -123,6 +123,12 @@ and performance measurement (M7).
   bug in home-grown lock clients; scenario 6 exists specifically to pin the distinction.
 - A test that asserts a *specific* token value rather than ordering will break the moment the global
   sequence is shared — assert `>`, never `==` on tokens across grants.
+- `maxParallelForks = 1` applies to every `Test` task through `dlock.java-base`, so each module's test
+  classes run in one JVM. **Keep it at 1 for `integrationTest`**: the shared, reused container and the
+  per-test truncation of §4 are not safe across forks. Lifting the limit for the other tests — tag the
+  timing-sensitive ones, for example `@Tag("wallclock")`, and let the rest parallelise, as
+  [#99](https://github.com/rednavis/distributed-lock-lab/issues/99) P3 suggests — is a `build-logic`
+  change outside §3: open a follow-up issue rather than changing it here.
 
 ## 9. On completion
 

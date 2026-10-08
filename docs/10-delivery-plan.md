@@ -173,7 +173,7 @@ do not make it a failed day.
 | Nearly done, scope was slightly under-estimated | Finish it. Note the under-estimate in the pull request so the specification can be corrected |
 | Still discovering scope | **Stop adding code.** Bring the branch to a buildable state — `./gradlew build` green, no half-written file left behind |
 | Then | Keep the original id for the finished part. Take the **next reserved id in that milestone's gap** (T-009, T-019, T-028/029, T-035…039, T-048/049) for the remainder, and write its specification *now*, while the context is in your head |
-| Then | Mark the original ledger row `split`, pointing at the new id. Open an issue for the remainder. Land what you have |
+| Then | Mark the original ledger row `split`, pointing at the new id. Open an issue for the remainder, and split the original issue to match ([`CONTRIBUTING.md` §9](../CONTRIBUTING.md#9-when-a-task-turns-out-to-be-bigger-than-it-looked)). Land what you have |
 | Gap exhausted | The milestone was mis-scoped. That is a maintainer problem — open an issue rather than appending `T-017b`, `T-017c` |
 
 *Why the gaps exist:* renumbering 63 tasks to accommodate one split would invalidate every

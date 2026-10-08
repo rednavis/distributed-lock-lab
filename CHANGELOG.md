@@ -60,6 +60,9 @@ clone. That is the first point at which there is anything worth versioning.
   `01-business-requirements` → `01-requirements`, `03-technical-architecture` → `03-architecture`,
   `05-gcp-architecture` → `05-infrastructure`, `07-correctness-and-test-strategy` →
   `07-correctness-and-testing`, `09-risk-register` → `09-risks`.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md#7-definition-of-done) §7 gate 5 and §9: splitting a task now
+  splits its GitHub issue in the same pull request, and every new ledger row has its own issue, so the
+  ledger and the tracker do not diverge ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 
 ### Superseded
 
