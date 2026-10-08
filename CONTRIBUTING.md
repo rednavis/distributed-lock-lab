@@ -213,7 +213,7 @@ A task is done when **all six** hold. Five out of six is not done.
 | 2 | **Style passes** | `./gradlew spotlessCheck` is green. Do not reformat files your task does not touch — it buries the real change in noise |
 | 3 | **The specified tests pass** | Exactly the tests your specification names, plus everything that was already green. A previously green test that is now red is a **failure, not a flake** |
 | 4 | **The observability actually emits** | Scrape it and look. If your task adds a metric, `curl /actuator/prometheus` and confirm the name and tags match [C4 §4.2](docs/contracts/C4-observability.md#ct4-metrics). If it adds a log event, trigger it and read the JSON. "The code calls the meter" is not evidence |
-| 5 | **The ledger is updated** | Your PR updates the task's row in [`tasks/README.md`](tasks/README.md) with status, the command that proves it, and anything the next contributor should know |
+| 5 | **The ledger is updated** | Your PR updates the task's row in [`tasks/README.md`](tasks/README.md) with status, the command that proves it, and anything the next contributor should know. If it adds or splits a ledger row, every row has its own GitHub issue and every **Blocked by** names one — [§9](#9-when-a-task-turns-out-to-be-bigger-than-it-looked) step 5 |
 | 6 | **Deviations are recorded** | Any difference between the specification and what you built is written down — see [§10](#10-recording-a-deviation) |
 
 **Gate 4 is the one that gets skipped, and it is the one that fails silently.** The named-port trap in
@@ -245,7 +245,11 @@ Split it. Do not sprawl.
    `T-029`, `T-035`…`T-039`, `T-048`, `T-049` exist precisely for this. Do not append
    `T-017b`, `T-017c`.
 4. Update the ledger row to `split`, pointing at the new id.
-5. Land what you have.
+5. In the same pull request, split the GitHub issue to match: link the issue from step 2 to the new id,
+   rescope the original issue to the part that stays, and re-point every **Blocked by** that depended on
+   the part that moved to the new id — in the ledger and in the issues. Every new id has its own issue;
+   a split that reaches only the ledger leaves the tracker naming an id it has no issue for.
+6. Land what you have.
 
 If you are **blocked** — a contract conflict, a missing prerequisite, a genuine ambiguity — say so in
 the issue, state precisely what decision is needed and from whom, and stop. Do not unblock yourself by
