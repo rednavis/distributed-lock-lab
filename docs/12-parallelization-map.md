@@ -76,9 +76,9 @@ exist before the version catalog, and the catalog before the convention plugins 
 ### Lane B — Lock core (M1, then M3)
 
 ```
-T-010 ──→ T-011 ──→ T-012 ──┬──→ T-013 ──→ T-018 ──→ T-016a ───┐
-                            │     ∥                             ├──→ T-016b ──→ T-017
-                            └──→ T-014 ──→ T-015 ───────────────┘
+T-010 ──→ T-011 ──→ T-012 ──┬──→ T-013 ──→ T-018 ──┬──→ T-016a ──┐
+                            │     ∥                │             ├──→ T-016b ──→ T-017
+                            └──→ T-014 ────────────┴──→ T-015 ───┘
 
 M3 (needs T-016b for the parity suite, but T-030..T-033 need only T-004):
 T-030 ──→ T-031 ──→ T-032 ──→ T-033 ──→ T-034a ──→ T-034b
@@ -86,12 +86,12 @@ T-030 ──→ T-031 ──→ T-032 ──→ T-033 ──→ T-034a ──→
 
 **M1 is a chain up to `T-012`, not a fan-out.** `T-011`, `T-012`, `T-014` and `T-015` each edit
 `PostgresLockStore.java`, and `T-011`…`T-013` share `LockSql.java`, so the store tasks cannot run side
-by side. After `T-012` two branches run in parallel: `T-013` → `T-018` → `T-016a` and `T-014` →
-`T-015`. `T-013` and `T-014` touch disjoint files, which is what makes them the **∥** pair. `T-018`, the
-core `LockService` ([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)), sits between the
-store and the web layer, because `T-016a` injects it. `T-016b` joins the branches: it waits on `T-015`,
-because L8 returns its `RevocationRecord`. `T-015` and `T-018` both touch `DefaultLockService.java` —
-see [12.6](#pm-collisions).
+by side. After `T-012`, `T-013` and `T-014` run in parallel — they touch disjoint files, which is what
+makes them the **∥** pair. `T-018`, the core `LockService`
+([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)), follows `T-013` and creates
+`DefaultLockService` with `forceRevoke` left as a seam; `T-015` waits on both `T-014` and `T-018` and
+fills that seam. `T-016a` injects the `LockService`, so it also follows `T-018`, and runs in parallel
+with `T-015`. `T-016b` joins the two: L8 returns `T-015`'s `RevocationRecord`.
 
 **`T-030`…`T-033` only need `lock-api` from M0.** The etcd backend does **not** depend on the
 PostgreSQL backend being finished — only the *parity suite* (`T-034`) does. If two contributors arrive
@@ -207,7 +207,6 @@ serialise; each is a reason to say so in your issue.
 | **`tasks/README.md`** | **Everyone** — updating the ledger is in the definition of done | Edit only your own row. A conflict here is a trivial rebase, but it will happen on nearly every PR |
 | **`lock-api`** | M1, M2 and M3 contributors simultaneously | Changes need **two approvals** and are wire-compatibility changes. If your task needs a new type there, say so in the issue early so others can plan around it |
 | **Contract amendments** | Any contributor who finds a contract wrong | Amendments block dependent tasks by design. Open the [contract-change issue](../.github/ISSUE_TEMPLATE/contract-change.yml) immediately rather than at the end of your work |
-| **`DefaultLockService.java`** | `T-015` and `T-018` | Both touch the core service, and neither blocks the other: `T-018` creates the class and leaves `forceRevoke` as the seam `T-015` fills ([#96](https://github.com/rednavis/distributed-lock-lab/issues/96)). Whoever starts second rebases onto the first, and says so in the issue |
 | **Shared test fixtures** | M2 and M4 | Fixtures live inside the owning module. If you need someone else's, that is a signal the fixture belongs in a shared test source set — raise it, do not copy it |
 | **The cloud project** | Two people applying Terraform at once | **Never do this.** The apply sequence is serial and maintainer-coordinated. State locking will save you; the bill will not |
 

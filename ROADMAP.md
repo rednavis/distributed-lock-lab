@@ -17,7 +17,7 @@ states: true or false in one tree state, never a judgement call.
 | **Current milestone** | **M1 — PostgreSQL lock backend** · M0 closed 2026-09-18 |
 | Tasks complete | 8 of 63 · 0 claimed |
 | In flight | — |
-| Next on the critical path | [`T-010`](../../issues/19) → `T-011` → `T-012`. After `T-012`, M1 splits into two branches: `T-013` → [`T-018`](../../issues/96) → `T-016a`, and `T-014` → `T-015` |
+| Next on the critical path | [`T-010`](../../issues/19) → `T-011` → `T-012`. After `T-012`: `T-013` ∥ `T-014`, then [`T-018`](../../issues/96), then `T-016a` ∥ `T-015` |
 | Available in parallel right now | [`T-023`](../../issues/30) (`rail-stub`, needs M0 only), [`T-050`](../../issues/48), [`T-051`](../../issues/49), [`T-052`](../../issues/50) (Terraform authoring, no cloud account) and [`T-068`](../../issues/66) (the runbook, pure prose) — see [`docs/12-parallelization-map.md`](docs/12-parallelization-map.md) |
 
 **Keeping this block true.** It is derived from the ledger, so it goes stale the moment a milestone
@@ -70,7 +70,7 @@ M7 broaden the claim; they do not create it.
 | | |
 |---|---|
 | Tasks | [`T-010`](tasks/T-010-lockdb-migration.md)…[`T-017`](tasks/T-017-pg-testcontainers.md) |
-| Parallelism | Low. `T-010` → `T-011` → `T-012` is strictly ordered, because the store tasks edit the same files. Then two branches: `T-013` → [`T-018`](../../issues/96) (the core `LockService`) → `T-016a`, and `T-014` → `T-015`; they join at `T-016b` |
+| Parallelism | Low. `T-010` → `T-011` → `T-012` is strictly ordered, because the store tasks edit the same files. Then `T-013` ∥ `T-014`; [`T-018`](../../issues/96) (the core `LockService`) follows `T-013`; `T-016a` ∥ `T-015` follow `T-018`, and join at `T-016b` |
 | Good first issues | [`T-010`](tasks/T-010-lockdb-migration.md) (the schema migration) |
 | Needs cloud | No |
 
