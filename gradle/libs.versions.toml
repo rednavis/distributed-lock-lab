@@ -10,7 +10,7 @@ spring-boot-bom = "4.1.0"
 postgresql = "42.7.5"
 flyway-core = "11.8.0"
 jetcd-core = "0.8.5"
-otel-bom = "1.49.0"
+otel-bom = "1.66.0"
 # lombok, junit-bom and assertj are also managed by spring-boot-bom. Keep them at the versions it manages and
 # move them with it, or the services resolve different ones than the other modules.
 lombok = "1.18.46"
