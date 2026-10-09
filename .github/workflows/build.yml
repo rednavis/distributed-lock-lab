@@ -30,6 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Cheapest failure first: no JDK, no Gradle. Dependabot's image pull
+      # requests change only the tag (see dependabot.yml), so a tag that drifts
+      # from gradle/libs.versions.toml fails here.
+      - name: Image tags match the version catalog
+        run: ./scripts/check-versions.sh
+
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:

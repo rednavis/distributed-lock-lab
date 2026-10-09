@@ -87,4 +87,5 @@ The PostgreSQL, etcd and Temurin versions live in
 [`gradle/libs.versions.toml`](../../gradle/libs.versions.toml), as `postgres-image`, `etcd-image`
 and `temurin-image` ([C5 §5.3](../../docs/contracts/C5-config-build-and-naming.md#ct5-catalog)).
 `compose.yaml` and the Dockerfile repeat them as literal tags, because neither can read the catalog.
-When you bump one, change the catalog entry and the tag in the same commit.
+When you bump one, change the catalog entry and the tag in the same commit: the build workflow runs
+[`scripts/check-versions.sh`](../../scripts/check-versions.sh) first and fails when they differ.
