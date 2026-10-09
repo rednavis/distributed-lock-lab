@@ -22,6 +22,14 @@ updates:
     labels: ["type:chore", "area:build"]
     commit-message:
       prefix: "chore(ci)"
+    # Every action is pinned to a commit SHA with its release tag as a comment;
+    # Dependabot moves both. Minor and patch releases arrive as one grouped pull
+    # request; a major release comes on its own, so one breaking upgrade cannot
+    # hold back the rest.
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # The version catalog is the single place any version appears, by contract
   # (C5 #ct5-catalog), so Dependabot produces one coherent PR per group rather

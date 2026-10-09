@@ -38,7 +38,7 @@ jobs:
     env:
       MODULE: ${{ matrix.module }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # A service without code has no bootJar, and the Dockerfile stops on that
       # by design. Skip the leg instead of failing the matrix.
@@ -58,12 +58,12 @@ jobs:
         if: steps.code.outputs.has-code == 'true'
         run: echo "image=europe-central2-docker.pkg.dev/dlock-lab/dlock/${MODULE}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         if: steps.code.outputs.has-code == 'true'
 
       - name: Build
         if: steps.code.outputs.has-code == 'true'
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: deploy/images/Dockerfile
@@ -73,7 +73,7 @@ jobs:
 
       - name: Generate the SBOM
         if: steps.code.outputs.has-code == 'true'
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: ${{ steps.tag.outputs.image }}
           format: spdx-json
@@ -82,7 +82,7 @@ jobs:
       - name: Authenticate to Google Cloud
         id: auth
         if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_CI_SERVICE_ACCOUNT }}
@@ -90,7 +90,7 @@ jobs:
 
       - name: Log in to Artifact Registry
         if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
-        uses: docker/login-action@v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: europe-central2-docker.pkg.dev
           username: oauth2accesstoken
@@ -100,7 +100,7 @@ jobs:
       # provenance attestations, which only exist on a pushed image.
       - name: Push with provenance
         if: steps.code.outputs.has-code == 'true' && vars.ARTIFACT_REGISTRY_PUSH == 'true'
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: deploy/images/Dockerfile

@@ -69,6 +69,9 @@ clone. That is the first point at which there is anything worth versioning.
 - Dependabot proposes container image updates only within the pinned lines — PostgreSQL 16, etcd 3.6
   and the Java 25 toolchain; moving to another line is a contract change
   ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
+- Every GitHub Action in the workflows is pinned to a commit SHA, with its release tag as a comment, so
+  a moved or hijacked tag cannot change the action code CI runs
+  ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 
 ### Superseded
 
