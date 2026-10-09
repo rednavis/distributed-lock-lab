@@ -5,6 +5,7 @@
 #   docker build --build-arg MODULE=<module> -f deploy/images/Dockerfile .     # from the repository root
 #
 # The base tags repeat temurin-image from gradle/libs.versions.toml (C5 #ct5-catalog); move them together.
+# scripts/check-versions.sh fails the build if they differ.
 # The build context is filtered by Dockerfile.dockerignore, next to this file.
 
 FROM eclipse-temurin:25.0.4_7-jdk AS build

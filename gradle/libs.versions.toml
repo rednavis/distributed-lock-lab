@@ -23,6 +23,7 @@ google-java-format = "1.28.0"
 # Container image versions: not Gradle dependencies, but no version may live anywhere else either. Not in
 # C5 #ct5-catalog yet (recorded deviation). deploy/compose/compose.yaml and deploy/images/Dockerfile repeat
 # them literally as image tags; change a version here and its tag there in the same commit.
+# scripts/check-versions.sh fails the build when a tag drifts from its row here.
 postgres-image = "16.15"
 etcd-image = "3.6.14"
 temurin-image = "25.0.4_7"

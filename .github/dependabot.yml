@@ -8,8 +8,9 @@
 # version lives (C5 #ct5-catalog), and deploy/compose/compose.yaml and
 # deploy/images/Dockerfile repeat postgres-image, etcd-image and temurin-image as
 # literal tags. Dependabot cannot see those catalog entries -- they are not Gradle
-# dependencies -- so its image pull requests change the tag only. Before merging
-# one, raise the matching *-image version in the catalog in the same pull request.
+# dependencies -- so its image pull requests change the tag only, and the build's
+# scripts/check-versions.sh step fails them. Before merging one, raise the
+# matching *-image version in the catalog in the same pull request.
 version: 2
 updates:
   - package-ecosystem: "github-actions"

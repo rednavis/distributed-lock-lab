@@ -16,6 +16,9 @@ clone. That is the first point at which there is anything worth versioning.
 
 ### Added
 
+- [`scripts/check-versions.sh`](scripts/check-versions.sh), the build workflow's first step: the image
+  tags in `deploy/compose/compose.yaml` and `deploy/images/Dockerfile` must match the version catalog
+  ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 - **M0 — Foundations** ([`T-001`](tasks/T-001-monorepo-skeleton.md)…[`T-008`](tasks/T-008-repo-front-matter.md),
   closed 2026-09-18). Every deviation is recorded in the [ledger](tasks/README.md#m0--foundations).
   - A Gradle 9.5 Kotlin DSL monorepo: the nine modules of

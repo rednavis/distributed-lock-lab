@@ -7,7 +7,7 @@
 # serving writes (ADR-003, C5 #ct5-config). Each database has its own volume and its own password variable.
 #
 # Image tags repeat postgres-image and etcd-image from gradle/libs.versions.toml (C5 #ct5-catalog); change a
-# version there and its tag here in the same commit.
+# version there and its tag here in the same commit; scripts/check-versions.sh fails the build otherwise.
 
 name: dlock-lab
 
