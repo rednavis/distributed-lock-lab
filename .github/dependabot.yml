@@ -57,6 +57,14 @@ updates:
     labels: ["type:chore", "area:infra"]
     commit-message:
       prefix: "chore(deps)"
+    # The project is pinned to PostgreSQL 16 and etcd 3.6 (docs/04-contracts.md,
+    # C5 #ct5-catalog). Moving to another line is a contract change, not a
+    # dependency bump, so only updates within those lines are proposed.
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "etcd-development/etcd"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # The shared Dockerfile's eclipse-temurin JDK and JRE bases, which must move
   # together. Update the catalog too -- see the note at the top.
@@ -72,6 +80,11 @@ updates:
     groups:
       temurin:
         patterns: ["eclipse-temurin"]
+    # The images must match the Java 25 toolchain in build-logic (C5 #ct5-modules);
+    # a new Java line is a toolchain change, not a base-image bump.
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
 
   # Provider constraints. The terraform updater reads only the .tf files directly
   # in the directory it is given, so /deploy/terraform itself would never match:

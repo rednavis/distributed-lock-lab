@@ -66,6 +66,9 @@ clone. That is the first point at which there is anything worth versioning.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md#7-definition-of-done) §7 gate 5 and §9: splitting a task now
   splits its GitHub issue in the same pull request, and every new ledger row has its own issue, so the
   ledger and the tracker do not diverge ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
+- Dependabot proposes container image updates only within the pinned lines — PostgreSQL 16, etcd 3.6
+  and the Java 25 toolchain; moving to another line is a contract change
+  ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 
 ### Superseded
 
