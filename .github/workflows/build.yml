@@ -88,8 +88,17 @@ jobs:
       # contract becomes entangled with a framework's lifecycle (C2 #ct2-zero-dep).
       - name: Verify lock-api has zero third-party dependencies
         run: |
+          set -o pipefail
           ./gradlew :lock-api:dependencies --configuration runtimeClasspath \
             | tee /tmp/deps.txt
+          # The grep at the end fails only on a match, so it must not run on a bad
+          # report. pipefail fails the step when Gradle fails, including on an
+          # unknown configuration name; the header check below fails it when the
+          # report is empty or its format changed.
+          if ! grep -qE '^runtimeClasspath( - |$)' /tmp/deps.txt; then
+            echo "::error file=.github/workflows/build.yml::the dependency report has no runtimeClasspath section, so the zero-dependency check would pass without checking anything"
+            exit 1
+          fi
           if grep -qE '^[\\+|].*---' /tmp/deps.txt; then
             echo "::error file=lock-api/build.gradle.kts::lock-api must have zero third-party dependencies (C2 #ct2-zero-dep)"
             exit 1
