@@ -90,6 +90,11 @@ re-check and move **forward** when touched, never pin backwards.
 | `testcontainers-bom` | `org.testcontainers:testcontainers-bom` | 1.21.0 | `lock-server`, `payment-resource`, `rail-proxy`, `harness` |
 | `spotless-plugin` | `com.diffplug.spotless` (Gradle plugin) | 7.0.3 | `build-logic` (applied to all) |
 | `google-java-format` | `com.google.googlejavaformat:google-java-format` | 1.28.0 | `build-logic` (Spotless step) |
+| `postgres-image` | `postgres` (container image) | 16.15 | `deploy/compose` — lockdb and paydb, two servers (ADR-003) |
+| `etcd-image` | `gcr.io/etcd-development/etcd` (container image, tag `v<version>`) | 3.6.14 | `deploy/compose` |
+| `temurin-image` | `eclipse-temurin` (container image, tags `<version>-jdk` / `<version>-jre`) | 25.0.4_7 | `deploy/images/Dockerfile`, build and runtime bases |
+| `terraform` | Terraform CLI | 1.15.9 | CI `infra.yml`; the HCL pins `required_version = "~> 1.15"` (ADR-008 D4) |
+| `tflint` | tflint | 0.64.0 | CI `infra.yml` |
 
 **The rule the catalog enforces: no version number appears anywhere except the catalog.** No literal
 version in a `build.gradle.kts`, a Dockerfile base tag chosen ad hoc, or a manifest. The reason is
@@ -97,6 +102,10 @@ concrete: `lock-client` and `lock-server` exchange a wire contract; if one drift
 Jackson or jetcd, the mismatch is invisible until a deserialisation error in a live critical section,
 and CI passed because each module built fine alone. `lock-api` additionally has **zero third-party
 dependencies** (NFR-16), so it cannot drag a version anywhere.
+
+Files that cannot read the catalog still take their version from a `[versions]` row. CI workflows read
+it at run time; compose image tags and Dockerfile `FROM` tags are the one sanctioned mirror — they
+repeat the `*-image` row literally, and CI fails when they differ.
 
 ## 5.4 Module inventory {#ct5-modules}
 
