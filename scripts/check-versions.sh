@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# check-versions.sh -- container image tags must match the version catalog.
+# check-versions.sh -- versions outside Gradle must come from the version catalog.
 #
-#   ./scripts/check-versions.sh
+#   ./scripts/check-versions.sh               # run every check
+#   ./scripts/check-versions.sh --get <key>   # print one [versions] value (used by CI)
 #
 # gradle/libs.versions.toml is the single place a version lives (C5 #ct5-catalog),
 # but deploy/compose/compose.yaml and deploy/images/Dockerfile cannot read it, so
@@ -14,6 +15,10 @@
 # Only the two files below are scanned. A new compose file or Dockerfile that
 # names an image must be added here, or its tags go unchecked.
 #
+# CI tools have no tag to compare: .github/workflows/infra.yml reads the
+# terraform and tflint versions with --get, and the second check fails if it
+# ever carries a literal version again.
+#
 # Same shell discipline as check-docs.sh: no `set -e`, and every grep that may
 # match nothing is guarded.
 
@@ -24,6 +29,7 @@ cd "$(dirname "$0")/.." || exit 2
 CATALOG="gradle/libs.versions.toml"
 COMPOSE="deploy/compose/compose.yaml"
 DOCKERFILE="deploy/images/Dockerfile"
+INFRA=".github/workflows/infra.yml"
 RC=0
 CHECKED=0
 
@@ -41,6 +47,19 @@ err() {
 catalog_version() {
   sed -nE "s/^$1[[:space:]]*=[[:space:]]*\"([^\"]+)\".*/\1/p" "$CATALOG" | head -n 1
 }
+
+if [ "${1:-}" = "--get" ]; then
+  # The key goes into a sed pattern, so only plain catalog names are accepted.
+  case "${2:-}" in
+    "" | *[!a-z0-9-]*) echo "usage: $0 --get <key>   (a [versions] name such as terraform)" >&2; exit 2 ;;
+  esac
+  [ $# -eq 2 ] || { echo "usage: $0 --get <key>" >&2; exit 2; }
+  value="$(catalog_version "$2")"
+  [ -n "$value" ] || { echo "error: the catalog has no $2 version" >&2; exit 2; }
+  printf '%s\n' "$value"
+  exit 0
+fi
+[ $# -eq 0 ] || { echo "usage: $0 [--get <key>]" >&2; exit 2; }
 
 POSTGRES="$(catalog_version postgres-image)"
 ETCD="$(catalog_version etcd-image)"
@@ -116,8 +135,47 @@ while IFS=: read -r line rest; do
 done <<<"$(grep -niE '^[[:space:]]*FROM[[:space:]]' "$DOCKERFILE" || true)"
 [ "$found" -gt 0 ] || err "$DOCKERFILE" 1 "found no FROM lines -- the check would pass vacuously"
 
+[ "$RC" -eq 0 ] && echo "  OK -- $CHECKED image tags match the version catalog."
+
+echo
+echo "== workflow tool versions =="
+before="$RC"
+RC=0
+for key in terraform tflint; do
+  [ -n "$(catalog_version "$key")" ] || err "$CATALOG" 1 "the catalog has no $key version"
+done
+# Each input must be exactly the matching output of the versions step. Anything
+# else -- a literal, a typo in the output name, a `|| fallback` -- either pins a
+# version outside the catalog or leaves the input empty, and both setup actions
+# then install the latest release without a word.
+for key in terraform tflint; do
+  name="${key}_version"
+  want="\${{ steps.versions.outputs.$key }}"
+  hits="$(grep -nE "^[[:space:]]*$name:" "$INFRA" || true)"
+  if [ -z "$hits" ]; then
+    err "$INFRA" 1 "found no $name -- the check would pass vacuously"
+  fi
+  while IFS=: read -r line rest; do
+    [ -z "$line" ] && continue
+    value="$(sed -E "s/^[[:space:]]*$name:[[:space:]]*//; s/[[:space:]]+#.*\$//; s/^[\"']//; s/[\"']\$//" <<<"$rest")"
+    if [ "$value" = "$want" ]; then
+      echo "  OK    $INFRA:$line  $name = $value"
+    else
+      err "$INFRA" "$line" "$name must be exactly $want, found $value"
+    fi
+  done <<<"$hits"
+  # The producer side: the versions step must read this key from the catalog.
+  grep -qF -- "check-versions.sh --get $key)" "$INFRA" \
+    || err "$INFRA" 1 "the versions step does not read $key with scripts/check-versions.sh --get $key"
+  grep -qE "echo \"$key=" "$INFRA" \
+    || err "$INFRA" 1 "the versions step does not write the $key output"
+done
+grep -qE '^[[:space:]]*id:[[:space:]]*versions[[:space:]]*$' "$INFRA" \
+  || err "$INFRA" 1 "no step has id: versions"
+[ "$RC" -eq 0 ] && echo "  OK -- infra.yml reads its tool versions from the catalog."
+[ "$before" -eq 0 ] || RC=1
+
 if [ "$RC" -eq 0 ]; then
-  echo "  OK -- $CHECKED image tags match the version catalog."
   echo
   echo "all checks passed."
 else

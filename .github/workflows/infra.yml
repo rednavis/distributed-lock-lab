@@ -12,9 +12,19 @@ name: infra
 on:
   push:
     branches: [master]
-    paths: ['deploy/terraform/**', '.github/workflows/infra.yml']
+    paths:
+      - 'deploy/terraform/**'
+      - '.github/workflows/infra.yml'
+      # The Terraform and tflint versions come from here (see the versions step).
+      - 'gradle/libs.versions.toml'
+      - 'scripts/check-versions.sh'
   pull_request:
-    paths: ['deploy/terraform/**', '.github/workflows/infra.yml']
+    paths:
+      - 'deploy/terraform/**'
+      - '.github/workflows/infra.yml'
+      # The Terraform and tflint versions come from here (see the versions step).
+      - 'gradle/libs.versions.toml'
+      - 'scripts/check-versions.sh'
   workflow_dispatch:
 
 permissions:
@@ -32,11 +42,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # 1.15 is the line C5 and ADR-008 pin. The catalog has no Terraform row yet,
-      # so this literal is the only place the patch version lives.
+      # The versions live in gradle/libs.versions.toml, the only place a version
+      # may live (C5 #ct5-catalog). Assigned first, so a missing row fails the
+      # step under bash -e instead of passing an empty version on.
+      - name: Tool versions from the version catalog
+        id: versions
+        run: |
+          terraform="$(./scripts/check-versions.sh --get terraform)"
+          tflint="$(./scripts/check-versions.sh --get tflint)"
+          echo "terraform=$terraform" >> "$GITHUB_OUTPUT"
+          echo "tflint=v$tflint" >> "$GITHUB_OUTPUT"
+
+      # 1.15 is the line C5 and ADR-008 pin; the catalog row holds the patch.
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: '1.15.9'
+          terraform_version: ${{ steps.versions.outputs.terraform }}
           terraform_wrapper: false
 
       # Formatting first: the cheapest failure, and it needs no init.
@@ -58,10 +78,10 @@ jobs:
             terraform -chdir="$d" validate
           done <<<"$dirs"
 
-      # Pinned for the same reason as Terraform; the catalog has no tflint row.
+      # Pinned for the same reason as Terraform, from the catalog's tflint row.
       - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
         with:
-          tflint_version: v0.64.0
+          tflint_version: ${{ steps.versions.outputs.tflint }}
 
       - name: Lint
         run: tflint --chdir=deploy/terraform --recursive
