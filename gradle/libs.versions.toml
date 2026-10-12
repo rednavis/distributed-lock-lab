@@ -27,6 +27,10 @@ google-java-format = "1.28.0"
 postgres-image = "16.15"
 etcd-image = "3.6.14"
 temurin-image = "25.0.4_7"
+# Tool versions read by CI, not by Gradle: infra.yml installs Terraform and tflint at these versions through
+# scripts/check-versions.sh --get. Not in C5 #ct5-catalog yet (recorded deviation, #114).
+terraform = "1.15.9"
+tflint = "0.64.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot-bom" }

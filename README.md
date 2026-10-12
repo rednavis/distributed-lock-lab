@@ -192,7 +192,8 @@ else ([C5 §5.3](docs/contracts/C5-config-build-and-naming.md#ct5-catalog)).
 | Eclipse Temurin image | 25.0.4_7 | catalog `temurin-image` |
 | Java | 25 | Gradle toolchain in `build-logic/src/main/kotlin/dlock.java-base.gradle.kts` — the catalog has no toolchain row |
 | Gradle | 9.5.0 | `gradle/wrapper/gradle-wrapper.properties` |
-| Terraform | 1.15 | [C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules) and `.github/workflows/infra.yml` |
+| Terraform | 1.15.9 | catalog `terraform` — the line is 1.15 ([C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules), [ADR-008](docs/adr/ADR-008-terraform-layout-state-and-provider-versions.md)) |
+| tflint | 0.64.0 | catalog `tflint` |
 
 ## Non-goals
 

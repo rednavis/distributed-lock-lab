@@ -25,8 +25,8 @@ clone. That is the first point at which there is anything worth versioning.
     [C5 §5.4](docs/contracts/C5-config-build-and-naming.md#ct5-modules) plus the `build-logic` included
     build.
   - The version catalog, [`gradle/libs.versions.toml`](gradle/libs.versions.toml), including the
-    PostgreSQL, etcd and Temurin image versions. The Java, Terraform and tflint versions are still
-    literals outside it; the ledger records each one.
+    PostgreSQL, etcd and Temurin image versions. The Java version is still a literal outside it, as the
+    ledger records; Terraform and tflint have since moved into it (below).
   - Convention plugins with Spotless and google-java-format, and a build-time check that Lombok stays
     limited to `@RequiredArgsConstructor` and `@Slf4j`.
   - `lock-api`: the contract types, with zero third-party dependencies and a test that pins their
@@ -71,6 +71,9 @@ clone. That is the first point at which there is anything worth versioning.
   ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 - Every GitHub Action in the workflows is pinned to a commit SHA, with its release tag as a comment, so
   a moved or hijacked tag cannot change the action code CI runs
+  ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
+- The Terraform and tflint versions used by CI live in the version catalog (`terraform`, `tflint`);
+  `infra.yml` reads them from there, and `scripts/check-versions.sh` fails the build on a literal
   ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 
 ### Superseded

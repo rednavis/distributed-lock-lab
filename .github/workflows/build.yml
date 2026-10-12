@@ -32,8 +32,9 @@ jobs:
 
       # Cheapest failure first: no JDK, no Gradle. Dependabot's image pull
       # requests change only the tag (see dependabot.yml), so a tag that drifts
-      # from gradle/libs.versions.toml fails here.
-      - name: Image tags match the version catalog
+      # from gradle/libs.versions.toml fails here, and so does a literal
+      # Terraform or tflint version in infra.yml.
+      - name: Versions match the version catalog
         run: ./scripts/check-versions.sh
 
       - name: Set up JDK 25
