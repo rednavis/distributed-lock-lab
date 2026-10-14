@@ -75,6 +75,10 @@ clone. That is the first point at which there is anything worth versioning.
 - The Terraform and tflint versions used by CI live in the version catalog (`terraform`, `tflint`);
   `infra.yml` reads them from there, and `scripts/check-versions.sh` fails the build on a literal
   ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
+- The `lock-api` zero-dependency check in the build workflow first proves its Gradle report exists and
+  has a `runtimeClasspath` section, and runs with `pipefail`, so a renamed configuration, a changed
+  report format or a failed Gradle run fails it instead of passing it unchecked
+  ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
 
 ### Superseded
 
