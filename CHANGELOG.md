@@ -79,6 +79,9 @@ clone. That is the first point at which there is anything worth versioning.
   has a `runtimeClasspath` section, and runs with `pipefail`, so a renamed configuration, a changed
   report format or a failed Gradle run fails it instead of passing it unchecked
   ([#99](https://github.com/rednavis/distributed-lock-lab/issues/99)).
+- [C5 `#ct5-catalog`](docs/contracts/C5-config-build-and-naming.md#ct5-catalog) lists the five versions
+  that live outside Gradle — the three container images, Terraform and tflint — and states how files
+  that cannot read the catalog obey it ([#114](https://github.com/rednavis/distributed-lock-lab/issues/114)).
 
 ### Superseded
 
